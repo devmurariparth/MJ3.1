@@ -1,0 +1,35 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.mj.agent"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.mj.agent"
+        minSdk 26
+        targetSdk 35
+        versionCode 112
+        versionName "1.1.2"
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ""
+            versionNameSuffix ""
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "androidx.webkit:webkit:1.12.1"
+}
