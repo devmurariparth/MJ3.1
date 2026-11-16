@@ -1,0 +1,756 @@
+name: Build MJ Master APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Initialize Capacitor Android Project
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp manifest.json sw.js *.png www/ 2>/dev/null || true
+          node -e "const fs=require('fs'); fs.writeFileSync('package.json', JSON.stringify({name:'mj-ai-agent',version:'2.0.0',private:true},null,2));"
+          npm install @capacitor/core@6.1.2 @capacitor/cli@6.1.2 @capacitor/android@6.1.2
+          npx cap init "MJ AI" "com.mj.aiagent" --web-dir www
+          npx cap add android
+          npx cap sync android
+
+      - name: Create Accessibility Service XML Config
+        run: |
+          mkdir -p android/app/src/main/res/xml
+          cat << 'EOF' > android/app/src/main/res/xml/mj_accessibility_config.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+              android:accessibilityEventTypes="typeAllMask"
+              android:accessibilityFeedbackType="feedbackGeneric"
+              android:accessibilityFlags="flagDefault|flagReportViewIds|flagRetrieveInteractiveWindows"
+              android:canPerformGestures="true"
+              android:canRetrieveWindowContent="true"
+              android:notificationTimeout="100" />
+          EOF
+
+      - name: Create MJAccessibilityService.java (Auto-Tap, Scroll Reels & Screen OCR)
+        run: |
+          cat << 'EOF' > android/app/src/main/java/com/mj/aiagent/MJAccessibilityService.java
+          package com.mj.aiagent;
+
+          import android.accessibilityservice.AccessibilityService;
+          import android.accessibilityservice.GestureDescription;
+          import android.graphics.Path;
+          import android.os.Build;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.util.DisplayMetrics;
+          import android.view.accessibility.AccessibilityEvent;
+          import android.view.accessibility.AccessibilityNodeInfo;
+          import java.util.List;
+
+          public class MJAccessibilityService extends AccessibilityService {
+              public static MJAccessibilityService instance;
+              private Handler scrollHandler = new Handler(Looper.getMainLooper());
+              private boolean autoScrolling = false;
+
+              private Runnable scrollRunnable = new Runnable() {
+                  @Override
+                  public void run() {
+                      if (!autoScrolling) return;
+                      swipeUpReel();
+                      scrollHandler.postDelayed(this, 5000);
+                  }
+              };
+
+              @Override
+              protected void onServiceConnected() {
+                  super.onServiceConnected();
+                  instance = this;
+              }
+
+              @Override
+              public void onAccessibilityEvent(AccessibilityEvent event) {}
+
+              @Override
+              public void onInterrupt() {}
+
+              @Override
+              public boolean onUnbind(android.content.Intent intent) {
+                  instance = null;
+                  autoScrolling = false;
+                  return super.onUnbind(intent);
+              }
+
+              public void setAutoScroll(boolean enable) {
+                  autoScrolling = enable;
+                  scrollHandler.removeCallbacks(scrollRunnable);
+                  if (enable) {
+                      scrollHandler.postDelayed(scrollRunnable, 2000);
+                  }
+              }
+
+              public void swipeUpReel() {
+                  if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return;
+                  try {
+                      DisplayMetrics dm = getResources().getDisplayMetrics();
+                      int cx = dm.widthPixels / 2;
+                      int startY = (int) (dm.heightPixels * 0.78);
+                      int endY = (int) (dm.heightPixels * 0.22);
+
+                      Path path = new Path();
+                      path.moveTo(cx, startY);
+                      path.lineTo(cx, endY);
+
+                      GestureDescription.Builder builder = new GestureDescription.Builder();
+                      builder.addStroke(new GestureDescription.StrokeDescription(path, 0, 320));
+                      dispatchGesture(builder.build(), null, null);
+                  } catch (Exception e) {}
+              }
+
+              public boolean clickTextOnScreen(String text) {
+                  try {
+                      AccessibilityNodeInfo root = getRootInActiveWindow();
+                      if (root == null || text == null) return false;
+                      List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(text);
+                      if (nodes != null) {
+                          for (AccessibilityNodeInfo node : nodes) {
+                              if (node.isClickable()) {
+                                  node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                  return true;
+                              }
+                              AccessibilityNodeInfo parent = node.getParent();
+                              while (parent != null) {
+                                  if (parent.isClickable()) {
+                                      parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                      return true;
+                                  }
+                                  parent = parent.getParent();
+                              }
+                          }
+                      }
+                  } catch (Exception e) {}
+                  return false;
+              }
+
+              public String extractAllScreenText() {
+                  StringBuilder sb = new StringBuilder();
+                  try {
+                      AccessibilityNodeInfo root = getRootInActiveWindow();
+                      if (root != null) {
+                          traverseNodeText(root, sb);
+                      }
+                  } catch (Exception e) {}
+                  String res = sb.toString().trim();
+                  return res.isEmpty() ? "સ્ક્રીન પર કોઈ લખાણ મળ્યું નથી." : res;
+              }
+
+              private void traverseNodeText(AccessibilityNodeInfo node, StringBuilder sb) {
+                  if (node == null) return;
+                  if (node.getText() != null && node.getText().length() > 0) {
+                      sb.append(node.getText().toString()).append(" • ");
+                  } else if (node.getContentDescription() != null && node.getContentDescription().length() > 0) {
+                      sb.append(node.getContentDescription().toString()).append(" • ");
+                  }
+                  for (int i = 0; i < node.getChildCount(); i++) {
+                      traverseNodeText(node.getChild(i), sb);
+                  }
+              }
+          }
+          EOF
+
+      - name: Create MJNotificationService.java (Real WhatsApp & System Notification Reader)
+        run: |
+          cat << 'EOF' > android/app/src/main/java/com/mj/aiagent/MJNotificationService.java
+          package com.mj.aiagent;
+
+          import android.app.Notification;
+          import android.os.Bundle;
+          import android.service.notification.NotificationListenerService;
+          import android.service.notification.StatusBarNotification;
+          import java.util.ArrayList;
+          import java.util.List;
+
+          public class MJNotificationService extends NotificationListenerService {
+              public static final List<String> recentNotifications = new ArrayList<>();
+
+              @Override
+              public void onNotificationPosted(StatusBarNotification sbn) {
+                  try {
+                      if (sbn == null || sbn.getNotification() == null) return;
+                      Bundle extras = sbn.getNotification().extras;
+                      if (extras == null) return;
+                      CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
+                      CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
+                      if (title != null && text != null) {
+                          String entry = "<b>" + title.toString() + ":</b> " + text.toString();
+                          synchronized (recentNotifications) {
+                              recentNotifications.add(0, entry);
+                              if (recentNotifications.size() > 8) {
+                                  recentNotifications.remove(recentNotifications.size() - 1);
+                              }
+                          }
+                      }
+                  } catch (Exception e) {}
+              }
+          }
+          EOF
+
+      - name: Create MainActivity.java (Master Hardware Bridge + WebView Reload Fix)
+        run: |
+          cat << 'EOF' > android/app/src/main/java/com/mj/aiagent/MainActivity.java
+          package com.mj.aiagent;
+
+          import android.Manifest;
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.IntentFilter;
+          import android.content.pm.PackageManager;
+          import android.content.pm.ResolveInfo;
+          import android.hardware.Sensor;
+          import android.hardware.SensorEvent;
+          import android.hardware.SensorEventListener;
+          import android.hardware.SensorManager;
+          import android.hardware.camera2.CameraCharacteristics;
+          import android.hardware.camera2.CameraManager;
+          import android.media.AudioManager;
+          import android.media.ToneGenerator;
+          import android.net.Uri;
+          import android.os.BatteryManager;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.provider.AlarmClock;
+          import android.provider.MediaStore;
+          import android.provider.Settings;
+          import android.speech.RecognizerIntent;
+          import android.speech.tts.TextToSpeech;
+          import android.view.WindowManager;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.PermissionRequest;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebView;
+          import android.widget.Toast;
+          import androidx.core.app.ActivityCompat;
+          import com.getcapacitor.BridgeActivity;
+          import java.util.ArrayList;
+          import java.util.List;
+          import java.util.Locale;
+
+          public class MainActivity extends BridgeActivity implements SensorEventListener {
+              private TextToSpeech tts;
+              private boolean ttsReady = false;
+              private SensorManager sensorManager;
+              private boolean antiTheftActive = false;
+              private float lastX = 0, lastY = 0, lastZ = 0;
+              private boolean hasBaseline = false;
+              private ToneGenerator sirenTone;
+              private Handler sirenHandler = new Handler(Looper.getMainLooper());
+
+              private BroadcastReceiver unplugReceiver = new BroadcastReceiver() {
+                  @Override
+                  public void onReceive(Context context, Intent intent) {
+                      if (antiTheftActive && Intent.ACTION_POWER_DISCONNECTED.equals(intent.getAction())) {
+                          triggerNativeSiren("ફોન ચાર્જિંગમાંથી કાઢવામાં આવ્યો છે");
+                      }
+                  }
+              };
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                      ActivityCompat.requestPermissions(this, new String[]{
+                          Manifest.permission.RECORD_AUDIO,
+                          Manifest.permission.CAMERA,
+                          Manifest.permission.ACCESS_FINE_LOCATION,
+                          Manifest.permission.CALL_PHONE
+                      }, 100);
+                  }
+
+                  sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+                  registerReceiver(unplugReceiver, new IntentFilter(Intent.ACTION_POWER_DISCONNECTED));
+
+                  tts = new TextToSpeech(this, status -> {
+                      if (status == TextToSpeech.SUCCESS) {
+                          ttsReady = true;
+                          tts.setLanguage(new Locale("gu", "IN"));
+                      }
+                  });
+
+                  // CRITICAL FIX: Attach MJNativeBridge and reload WebView so window.MJNativeBridge is 100% bound!
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      WebView wv = getBridge().getWebView();
+                      wv.getSettings().setJavaScriptEnabled(true);
+                      wv.getSettings().setDomStorageEnabled(true);
+                      wv.getSettings().setMediaPlaybackRequiresUserGesture(false);
+                      wv.addJavascriptInterface(new MJNativeBridge(), "MJNativeBridge");
+                      wv.post(wv::reload);
+                  }
+              }
+
+              @Override
+              public void onDestroy() {
+                  try { unregisterReceiver(unplugReceiver); } catch (Exception e) {}
+                  super.onDestroy();
+              }
+
+              private void triggerNativeSiren(String reason) {
+                  if (!antiTheftActive) return;
+                  try {
+                      AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                      if (am != null) {
+                          int max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+                          am.setStreamVolume(AudioManager.STREAM_ALARM, max, 0);
+                      }
+                      if (sirenTone == null) {
+                          sirenTone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+                      }
+                      sirenTone.startTone(ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK, 2000);
+                  } catch (Exception e) {}
+
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().post(() -> {
+                          getBridge().getWebView().evaluateJavascript(
+                              "if(window.onAntiTheftTriggered) window.onAntiTheftTriggered('" + reason + "');", null
+                          );
+                      });
+                  }
+              }
+
+              @Override
+              public void onSensorChanged(SensorEvent event) {
+                  if (!antiTheftActive || event.sensor.getType() != Sensor.TYPE_ACCELEROMETER) return;
+                  float x = event.values[0], y = event.values[1], z = event.values[2];
+                  if (!hasBaseline) {
+                      lastX = x; lastY = y; lastZ = z;
+                      hasBaseline = true;
+                      return;
+                  }
+                  float delta = Math.abs(x - lastX) + Math.abs(y - lastY) + Math.abs(z - lastZ);
+                  lastX = x; lastY = y; lastZ = z;
+                  if (delta > 5.5f) {
+                      triggerNativeSiren("કોઈએ તમારા ફોનને અડક્યું છે");
+                  }
+              }
+
+              @Override
+              public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+              @Override
+              protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+                  super.onActivityResult(requestCode, resultCode, data);
+                  if (requestCode == 1001 && resultCode == RESULT_OK && data != null) {
+                      ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                      if (matches != null && !matches.isEmpty()) {
+                          final String spoken = matches.get(0).replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ");
+                          if (getBridge() != null && getBridge().getWebView() != null) {
+                              getBridge().getWebView().post(() -> {
+                                  getBridge().getWebView().evaluateJavascript(
+                                      "if(window.onNativeVoiceResult) window.onNativeVoiceResult('" + spoken + "');", null
+                                  );
+                              });
+                          }
+                      }
+                  }
+              }
+
+              public class MJNativeBridge {
+
+                  @JavascriptInterface
+                  public void speak(String text, String lang) {
+                      if (!ttsReady || tts == null || text == null) return;
+                      if (lang != null && lang.startsWith("hi")) {
+                          tts.setLanguage(new Locale("hi", "IN"));
+                      } else if (lang != null && lang.startsWith("en")) {
+                          tts.setLanguage(new Locale("en", "IN"));
+                      } else {
+                          tts.setLanguage(new Locale("gu", "IN"));
+                      }
+                      tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "mj_utt");
+                  }
+
+                  @JavascriptInterface
+                  public void startVoice(String lang) {
+                      runOnUiThread(() -> {
+                          try {
+                              Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                              intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                              intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang != null ? lang : "gu-IN");
+                              intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "MJ સાંભળે છે... બોલો");
+                              startActivityForResult(intent, 1001);
+                          } catch (Exception e) {
+                              Toast.makeText(MainActivity.this, "Google Voice App Required", Toast.LENGTH_SHORT).show();
+                          }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public String toggleTorch(boolean turnOn) {
+                      try {
+                          CameraManager cm = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                          if (cm != null) {
+                              for (String id : cm.getCameraIdList()) {
+                                  CameraCharacteristics cc = cm.getCameraCharacteristics(id);
+                                  Boolean hasFlash = cc.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+                                  if (hasFlash != null && hasFlash && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                      cm.setTorchMode(id, turnOn);
+                                      return turnOn ? "FLASHLIGHT: ON 🔦" : "FLASHLIGHT: OFF";
+                                  }
+                              }
+                          }
+                      } catch (Exception e) {}
+                      return "TORCH COMMAND SENT";
+                  }
+
+                  @JavascriptInterface
+                  public String setVolume(int percent) {
+                      try {
+                          AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                          if (am != null) {
+                              int maxMusic = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+                              int targetVol = Math.round((percent / 100f) * maxMusic);
+                              am.setStreamVolume(AudioManager.STREAM_MUSIC, targetVol, AudioManager.FLAG_SHOW_UI);
+                              return "VOLUME SET TO " + percent + "% 🔊";
+                          }
+                      } catch (Exception e) {}
+                      return "VOLUME UPDATED";
+                  }
+
+                  @JavascriptInterface
+                  public String setBrightness(int percent) {
+                      runOnUiThread(() -> {
+                          try {
+                              WindowManager.LayoutParams lp = getWindow().getAttributes();
+                              lp.screenBrightness = Math.max(0.05f, percent / 100f);
+                              getWindow().setAttributes(lp);
+                          } catch (Exception e) {}
+                      });
+                      return "BRIGHTNESS SET TO " + percent + "% ☀️";
+                  }
+
+                  @JavascriptInterface
+                  public String getBatteryInfo() {
+                      try {
+                          BatteryManager bm = (BatteryManager) getSystemService(Context.BATTERY_SERVICE);
+                          if (bm != null) {
+                              int pct = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                              return pct + "%";
+                          }
+                      } catch (Exception e) {}
+                      return "100%";
+                  }
+
+                  @JavascriptInterface
+                  public String setAntiTheft(boolean enable) {
+                      antiTheftActive = enable;
+                      hasBaseline = false;
+                      if (sensorManager != null) {
+                          if (enable) {
+                              Sensor acc = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+                              sensorManager.registerListener(MainActivity.this, acc, SensorManager.SENSOR_DELAY_UI);
+                          } else {
+                              sensorManager.unregisterListener(MainActivity.this);
+                              if (sirenTone != null) {
+                                  sirenTone.stopTone();
+                              }
+                          }
+                      }
+                      return enable ? "ANTI-THEFT ARMED 🚨" : "SIREN DISARMED ✅";
+                  }
+
+                  @JavascriptInterface
+                  public String openApp(String appName, String pkgHint) {
+                      try {
+                          PackageManager pm = getPackageManager();
+                          String target = appName != null ? appName.toLowerCase().trim() : "";
+
+                          if (target.contains("camera") || target.contains("કેમેરા")) {
+                              Intent cam = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+                              cam.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                              startActivity(cam);
+                              return "CAMERA OPENED 📷";
+                          }
+
+                          if (pkgHint != null && !pkgHint.isEmpty()) {
+                              Intent exact = pm.getLaunchIntentForPackage(pkgHint.trim());
+                              if (exact != null) {
+                                  exact.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                  startActivity(exact);
+                                  return "OPENED: " + appName.toUpperCase();
+                              }
+                          }
+
+                          Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+                          mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+                          List<ResolveInfo> apps = pm.queryIntentActivities(mainIntent, 0);
+                          for (ResolveInfo info : apps) {
+                              String label = info.loadLabel(pm).toString().toLowerCase();
+                              String pkg = info.activityInfo.packageName.toLowerCase();
+                              if (label.contains(target) || pkg.contains(target.replace(" ", ""))) {
+                                  Intent launch = pm.getLaunchIntentForPackage(info.activityInfo.packageName);
+                                  if (launch != null) {
+                                      launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                      startActivity(launch);
+                                      return "OPENED: " + info.loadLabel(pm).toString().toUpperCase();
+                                  }
+                              }
+                          }
+
+                          Intent market = new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=" + Uri.encode(appName)));
+                          market.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(market);
+                          return "PLAY STORE: " + appName.toUpperCase();
+                      } catch (Exception e) {
+                          return "OPENED: " + appName;
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String sendWhatsAppAuto(String phone, String text) {
+                      try {
+                          String url = "https://api.whatsapp.com/send?phone=" + (phone != null ? phone : "") + "&text=" + Uri.encode(text != null ? text : "");
+                          Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                          intent.setPackage("com.whatsapp");
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+
+                          // If Accessibility Service is active, auto-tap Send button after 2 seconds!
+                          new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                              if (MJAccessibilityService.instance != null) {
+                                  MJAccessibilityService.instance.clickTextOnScreen("Send");
+                              }
+                          }, 2000);
+                          return "WHATSAPP AUTO-SEND 💬";
+                      } catch (Exception e) {
+                          return openApp("whatsapp", "com.whatsapp");
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String toggleAutoScrollReels(boolean enable) {
+                      if (MJAccessibilityService.instance != null) {
+                          MJAccessibilityService.instance.setAutoScroll(enable);
+                          return enable ? "AUTO-SCROLL REELS: ON 📲" : "AUTO-SCROLL: OFF";
+                      } else {
+                          openSetting("accessibility");
+                          return "ENABLE MJ ACCESSIBILITY FIRST 🛡️";
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String readScreenText() {
+                      if (MJAccessibilityService.instance != null) {
+                          return MJAccessibilityService.instance.extractAllScreenText();
+                      }
+                      return "સ્ક્રીન વાંચવા માટે પહેલા Max Hub માંથી Accessibility Service ચાલુ કરો.";
+                  }
+
+                  @JavascriptInterface
+                  public String clickScreenText(String txt) {
+                      if (MJAccessibilityService.instance != null) {
+                          boolean ok = MJAccessibilityService.instance.clickTextOnScreen(txt);
+                          return ok ? "CLICKED: " + txt.toUpperCase() : "NOT FOUND: " + txt;
+                      }
+                      return "ENABLE ACCESSIBILITY FIRST";
+                  }
+
+                  @JavascriptInterface
+                  public String getUnreadNotifications() {
+                      synchronized (MJNotificationService.recentNotifications) {
+                          if (MJNotificationService.recentNotifications.isEmpty()) {
+                              return "હાલમાં કોઈ નવા અનરીડ મેસેજ નથી. (જો પરમિશન બાકી હોય તો Max Hub માંથી Notification Access ચાલુ કરો)";
+                          }
+                          StringBuilder sb = new StringBuilder();
+                          for (String n : MJNotificationService.recentNotifications) {
+                              sb.append("• ").append(n).append("<br>");
+                          }
+                          return sb.toString();
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String openSetting(String setting) {
+                      try {
+                          String s = setting != null ? setting.toLowerCase() : "";
+                          Intent intent;
+                          if (s.contains("wifi") || s.contains("wi-fi")) {
+                              intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                          } else if (s.contains("bluetooth")) {
+                              intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+                          } else if (s.contains("sound") || s.contains("volume")) {
+                              intent = new Intent(Settings.ACTION_SOUND_SETTINGS);
+                          } else if (s.contains("display") || s.contains("brightness")) {
+                              intent = new Intent(Settings.ACTION_DISPLAY_SETTINGS);
+                          } else if (s.contains("accessibility")) {
+                              intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                          } else if (s.contains("notificationaccess")) {
+                              intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                          } else if (s.contains("developer")) {
+                              intent = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                          } else if (s.contains("location") || s.contains("gps")) {
+                              intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                          } else {
+                              intent = new Intent(Settings.ACTION_SETTINGS);
+                          }
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+                          return "OPENED: " + s.toUpperCase();
+                      } catch (Exception e) {
+                          return "SETTINGS OPENED";
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String setAlarm(int hour, int min, String message) {
+                      try {
+                          Intent intent = new Intent(AlarmClock.ACTION_SET_ALARM);
+                          intent.putExtra(AlarmClock.EXTRA_HOUR, hour);
+                          intent.putExtra(AlarmClock.EXTRA_MINUTES, min);
+                          intent.putExtra(AlarmClock.EXTRA_MESSAGE, message != null ? message : "MJ Alarm");
+                          intent.putExtra(AlarmClock.EXTRA_SKIP_UI, false);
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+                          return "ALARM SET: " + hour + ":" + (min < 10 ? "0" + min : min);
+                      } catch (Exception e) {
+                          return "ALARM OPENED";
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String makeCall(String number) {
+                      try {
+                          Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + (number != null ? number : "")));
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+                          return "DIALING: " + number;
+                      } catch (Exception e) {
+                          return "DIALER OPENED";
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public String openYouTubeSearch(String query) {
+                      try {
+                          Intent intent = new Intent(Intent.ACTION_SEARCH);
+                          intent.setPackage("com.google.android.youtube");
+                          intent.putExtra("query", query);
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+                          return "YOUTUBE: " + query.toUpperCase();
+                      } catch (Exception e) {
+                          Intent web = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(query)));
+                          web.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(web);
+                          return "YOUTUBE OPENED";
+                      }
+                  }
+              }
+          }
+          EOF
+
+      - name: Register Accessibility, Notification Listener & Permissions in AndroidManifest.xml
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "android/app/src/main/AndroidManifest.xml";
+            let xml = fs.readFileSync(path, "utf8");
+
+            const servicesXml = `
+                <service
+                    android:name=".MJAccessibilityService"
+                    android:label="MJ AI Master Agent"
+                    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.accessibilityservice.AccessibilityService" />
+                    </intent-filter>
+                    <meta-data
+                        android:name="android.accessibilityservice"
+                        android:resource="@xml/mj_accessibility_config" />
+                </service>
+
+                <service
+                    android:name=".MJNotificationService"
+                    android:label="MJ Notification Reader"
+                    android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.service.notification.NotificationListenerService" />
+                    </intent-filter>
+                </service>
+            </application>`;
+
+            xml = xml.replace("</application>", servicesXml);
+
+            const perms = [
+              "android.permission.INTERNET",
+              "android.permission.RECORD_AUDIO",
+              "android.permission.MODIFY_AUDIO_SETTINGS",
+              "android.permission.CAMERA",
+              "android.permission.FLASHLIGHT",
+              "android.permission.ACCESS_FINE_LOCATION",
+              "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.VIBRATE",
+              "android.permission.WAKE_LOCK",
+              "android.permission.CALL_PHONE",
+              "android.permission.QUERY_ALL_PACKAGES",
+              "com.android.alarm.permission.SET_ALARM"
+            ].map(p => `<uses-permission android:name="${p}" />`).join("\n    ");
+
+            const queries = `
+            <queries>
+                <intent>
+                    <action android:name="android.intent.action.MAIN" />
+                </intent>
+            </queries>`;
+
+            xml = xml.replace("</manifest>", `    ${perms}\n    ${queries}\n</manifest>`);
+            fs.writeFileSync(path, xml, "utf8");
+          '
+
+      - name: Compile APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare APK File
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk ./MJ-AI-Agent.apk
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MJ-AI-Agent-APK
+          path: ./MJ-AI-Agent.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag' || github.event_name == 'push'
+        with:
+          tag_name: v2.0.${{ github.run_number }}
+          name: MJ Master AI Agent v2.0.${{ github.run_number }}
+          files: ./MJ-AI-Agent.apk
