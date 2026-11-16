@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MJ</string>
+    <string name="mj_accessibility_service">MJ Accessibility</string>
+    <string name="mj_a11y_desc">Optional service: reads visible screen text and performs taps, typing, scrolling, or navigation only when you issue a command in MJ. Content you choose to send to an AI provider may be processed by that provider.</string>
+</resources>
