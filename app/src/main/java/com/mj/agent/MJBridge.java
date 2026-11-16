@@ -177,7 +177,10 @@ public class MJBridge {
     @JavascriptInterface
     public String sendSms(String who, String msg) {
         String num = resolveNumber(who);
-        if (num == null) return "ERR '" + who + "' નો નંબર મળ્યો નહીં";
+        if (num == null) {
+            if (!granted(Manifest.permission.READ_CONTACTS)) requestPermissions(act);
+            return "ERR '" + who + "' નો નંબર મળ્યો નહીં";
+        }
         Intent i = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + num));
         i.putExtra("sms_body", msg == null ? "" : msg);
         String r = start(i);
