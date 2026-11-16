@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MJ — Next-Gen Liquid Glass AI Agent</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d47ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MJ AI">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --horizon-blue: #0d47ff;
+      --horizon-cyan: #00a8ff;
+      --glass-fill: rgba(255, 255, 255, 0.07);
+      --glass-border: rgba(255, 255, 255, 0.22);
+      --glass-highlight: rgba(255, 255, 255, 0.45);
+      --text-white: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.58);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: #000000;
+      color: var(--text-white);
+      height: 100vh;
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone-frame {
+      position: relative;
+      width: 100%;
+      max-width: 430px;
+      height: 94vh;
+      max-height: 900px;
+      background: #000000;
+      border-radius: 56px;
+      border: 8px solid #0b0b0e;
+      box-shadow:
+        0 0 0 1.5px #2c2c32,
+        0 35px 90px rgba(0, 0, 0, 0.95),
+        0 0 70px rgba(13, 71, 255, 0.20);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 500px) {
+      .phone-frame {
+        max-width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        border-radius: 0;
+        border: none;
+      }
+    }
+
+    .horizon-glow {
+      position: absolute;
+      left: -25%;
+      right: -25%;
+      bottom: -24%;
+      height: 66%;
+      background: radial-gradient(ellipse at 50% 80%,
+        rgba(160, 210, 255, 0.95) 0%,
+        rgba(45, 135, 255, 0.85) 20%,
+        rgba(12, 62, 215, 0.55) 45%,
+        rgba(4, 22, 90, 0.22) 68%,
+        transparent 86%);
+      filter: blur(26px);
+      pointer-events: none;
+      z-index: 0;
+      transition: all 0.6s ease;
+    }
+
+    .horizon-glow.searching {
+      height: 80%;
+      bottom: -20%;
+      background: radial-gradient(ellipse at 50% 78%,
+        rgba(190, 235, 255, 1) 0%,
+        rgba(0, 175, 255, 0.9) 22%,
+        rgba(20, 85, 255, 0.6) 48%,
+        transparent 86%);
+    }
+
+    .horizon-glow.siren-alert {
+      height: 85%;
+      background: radial-gradient(ellipse at 50% 75%,
+        rgba(255, 20, 60, 0.95) 0%,
+        rgba(220, 0, 40, 0.65) 45%,
+        transparent 85%);
+      animation: sirenFlash 0.4s infinite alternate;
+    }
+
+    @keyframes sirenFlash {
+      from { opacity: 0.4; }
+      to { opacity: 1; }
+    }
+
+    .top-bar {
+      position: relative;
+      z-index: 20;
+      padding: 18px 20px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-pills {
+      display: flex;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(20px);
+      padding: 4px;
+      border-radius: 99px;
+    }
+
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.65);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .nav-tab.active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .circle-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(16px);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+
+    .circle-btn:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .circle-btn svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .view-panel {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .view-panel.active {
+      display: flex;
+    }
+
+    .orb-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 14px;
+      transition: all 0.5s ease;
+    }
+
+    .orb-wrapper {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    #ribbonCanvas, #orbGL {
+      position: relative;
+      z-index: 1;
+      width: 200px;
+      height: 200px;
+    }
+
+    .orb-wrapper::before {
+      content: '';
+      position: absolute;
+      inset: -45%;
+      background: radial-gradient(circle, rgba(20, 90, 255, 0.30) 0%, rgba(10, 50, 160, 0.12) 40%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-copy {
+      text-align: center;
+      margin-top: 10px;
+      padding: 0 24px;
+      transition: all 0.4s ease;
+    }
+
+    .wake-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 16px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.62);
+      font-size: 0.7rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .greeting-sub {
+      font-size: 0.86rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.62);
+      margin-bottom: 8px;
+      letter-spacing: 0.01em;
+    }
+
+    .greeting-main {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 2.05rem;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      background: linear-gradient(180deg, #ffffff 35%, rgba(255, 255, 255, 0.62) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-copy.hide {
+      opacity: 0;
+      filter: blur(12px);
+      transform: translateY(-8px);
+      pointer-events: none;
+    }
+
+    /* Quick Instant Action Bar on Home Screen */
+    .home-quick-row {
+      display: flex;
+      gap: 8px;
+      padding: 14px 18px 4px;
+      overflow-x: auto;
+      width: 100%;
+      scrollbar-width: none;
+    }
+    .home-quick-row::-webkit-scrollbar { display: none; }
+
+    .quick-pill-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 0.76rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .quick-pill-btn:active {
+      background: rgba(0, 195, 255, 0.35);
+      transform: scale(0.95);
+    }
+
+    .found-copy {
+      position: absolute;
+      top: 238px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      opacity: 0;
+      filter: blur(14px);
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease;
+    }
+
+    .found-copy.show {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+
+    .found-copy h2 {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.18;
+    }
+
+    .bottom-dock {
+      margin-top: auto;
+      padding: 14px 20px 24px;
+      display: flex;
+      justify-content: center;
+      position: relative;
+      z-index: 12;
+    }
+
+    .morph-pill {
+      width: 100%;
+      height: 54px;
+      border-radius: 99px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.30);
+      box-shadow:
+        0 12px 35px rgba(0, 15, 60, 0.55),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.40);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px 0 22px;
+      transition: width 0.45s cubic-bezier(0.2, 0.9, 0.25, 1), height 0.3s ease, padding 0.3s ease, border-color 0.3s ease;
+      overflow: hidden;
+    }
+
+    .morph-pill.searching-mode {
+      width: 150px;
+      height: 46px;
+      padding: 0 18px;
+      border-color: rgba(150, 210, 255, 0.55);
+    }
+
+    .pill-input-wrap {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .morph-pill.searching-mode .pill-input-wrap {
+      display: none;
+    }
+
+    .searching-indicator {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .morph-pill.searching-mode .searching-indicator {
+      display: flex;
+    }
+
+    .pulse-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .pulse-dots span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #7cc4ff;
+      animation: dotBlink 0.9s infinite alternate;
+    }
+    .pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dotBlink {
+      from { opacity: 0.25; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1.2); }
+    }
+
+    .ask-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 0.95rem;
+      user-select: text;
+    }
+
+    .ask-input::placeholder {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .wave-trigger-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(0, 195, 255, 0.22);
+      border: 1px solid rgba(0, 195, 255, 0.45);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .wave-trigger-btn:active {
+      transform: scale(0.92);
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .icon-btn svg { width: 20px; height: 20px; }
+    .icon-btn:active { transform: scale(0.9); }
+    .send-btn { display: none; background: rgba(255, 255, 255, 0.92); color: #041030; }
+    .morph-pill.has-text .send-btn { display: flex; }
+    .morph-pill.has-text .wave-btn { display: none; }
+
+    .home-quick-row { transition: opacity 0.4s ease; }
+    .busy .home-quick-row { opacity: 0; pointer-events: none; }
+    .sheet-open .bottom-dock { opacity: 0; pointer-events: none; }
+    .bottom-dock { transition: opacity 0.3s ease; }
+
+    .home-indicator {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 118px;
+      height: 4.5px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.88);
+      z-index: 30;
+      pointer-events: none;
+    }
+
+    /* Slide-Up Frosted Glass Sheet */
+    .frosted-sheet {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      top: 64px;
+      bottom: 26px;
+      z-index: 15;
+      border-radius: 30px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(8, 16, 34, 0.62) 38%, rgba(5, 12, 30, 0.86) 100%);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+      display: flex;
+      flex-direction: column;
+      padding: 0 18px 16px;
+      transform: translateY(112%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.55s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.35s ease;
+    }
+
+    .frosted-sheet.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet-grab {
+      padding: 10px 0 8px;
+      display: flex;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .sheet-top-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin: 4px 0 14px;
+    }
+
+    .user-query-pill {
+      background: rgba(255, 255, 255, 0.13);
+      padding: 9px 15px;
+      border-radius: 18px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+      max-width: 80%;
+      overflow-wrap: anywhere;
+    }
+
+    .sheet-scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: none;
+      -webkit-mask-image: linear-gradient(#000 calc(100% - 26px), transparent);
+      mask-image: linear-gradient(#000 calc(100% - 26px), transparent);
+    }
+    .sheet-scroll-body::-webkit-scrollbar { display: none; }
+
+    .mj-answer-text {
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.84);
+      user-select: text;
+    }
+
+    .ans-h {
+      font-weight: 600;
+      color: #fff;
+      margin: 14px 0 3px;
+      font-size: 0.9rem;
+    }
+
+    .exec-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 6px 13px;
+      border-radius: 99px;
+      background: rgba(0, 210, 255, 0.18);
+      border: 1px solid rgba(0, 210, 255, 0.5);
+      color: #7ce8ff;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .visual-cards-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 12px 0 4px;
+      scrollbar-width: none;
+    }
+    .visual-cards-row::-webkit-scrollbar { display: none; }
+
+    .img-card {
+      flex: 0 0 120px;
+      height: 120px;
+      border-radius: 18px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .img-card span {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 18px 8px 7px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+    }
+
+    .sheet-followup {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 99px;
+      padding: 6px 10px 6px 16px;
+      align-items: center;
+    }
+
+    .sheet-followup input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 0.88rem;
+      user-select: text;
+    }
+
+    /* VIEW 2: BENTO AI HUB */
+    .hub-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: none;
+    }
+    .hub-scroll::-webkit-scrollbar { display: none; }
+
+    .hub-hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+    }
+
+    .hub-hero p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .engine-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .engine-card {
+      background: linear-gradient(145deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 20px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .engine-card.selected {
+      background: linear-gradient(145deg, rgba(0, 168, 255, 0.3), rgba(13, 71, 255, 0.2));
+      border-color: rgba(0, 195, 255, 0.7);
+    }
+
+    .engine-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #7cc4ff;
+    }
+
+    .engine-name {
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 11px;
+    }
+
+    .bento-box {
+      background: linear-gradient(155deg, rgba(255,255,255,0.11), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 22px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .bento-box:active {
+      transform: scale(0.96);
+      border-color: #00c6ff;
+    }
+
+    .bento-box.tall {
+      grid-row: span 2;
+      background: linear-gradient(160deg, rgba(0, 168, 255, 0.24), rgba(120, 60, 255, 0.16));
+    }
+
+    .bento-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bento-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .bento-desc {
+      font-size: 0.71rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .suggestion-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .suggestion-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      cursor: pointer;
+    }
+
+    .suggestion-row:active {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* VIEW 3: VOICE CHAT */
+    .voice-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px 30px;
+      text-align: center;
+    }
+
+    .voice-status-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #a5d8ff;
+    }
+
+    #particleCanvas {
+      width: 210px;
+      height: 210px;
+      cursor: pointer;
+    }
+
+    .voice-headline {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.65);
+      max-width: 280px;
+    }
+
+    .voice-headline b {
+      color: #ffffff;
+    }
+
+    .voice-bars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 34px;
+    }
+
+    .voice-bars span {
+      width: 5px;
+      height: 10px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .voice-bars.speaking span {
+      background: #00d2ff;
+      animation: barJump 0.5s infinite ease-in-out alternate;
+    }
+    .voice-bars.speaking span:nth-child(2) { animation-delay: 0.1s; }
+    .voice-bars.speaking span:nth-child(3) { animation-delay: 0.25s; }
+    .voice-bars.speaking span:nth-child(4) { animation-delay: 0.15s; }
+    .voice-bars.speaking span:nth-child(5) { animation-delay: 0.3s; }
+
+    @keyframes barJump {
+      from { height: 8px; }
+      to { height: 30px; }
+    }
+
+    .voice-controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      width: 100%;
+    }
+
+    .red-mic-orb {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      box-shadow: 0 12px 30px rgba(255, 65, 108, 0.55);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .red-mic-orb.active {
+      animation: pulseRed 0.9s infinite alternate;
+    }
+
+    @keyframes pulseRed {
+      from { transform: scale(1); }
+      to { transform: scale(1.12); box-shadow: 0 0 38px rgba(255, 65, 108, 0.95); }
+    }
+
+    .voice-timer { font-size: 0.75rem; color: var(--text-muted); }
+
+    .settings-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: rgba(0, 4, 15, 0.85);
+      backdrop-filter: blur(25px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .settings-modal.open {
+      display: flex;
+    }
+
+    .settings-card {
+      width: 100%;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: rgba(14, 22, 46, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 28px;
+      padding: 22px;
+    }
+
+    .settings-card h3 {
+      font-family: 'Outfit', sans-serif;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .field-lbl {
+      display: block;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      margin: 10px 0 4px;
+    }
+
+    .field-inp {
+      width: 100%;
+      padding: 10px 13px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      outline: none;
+      font-size: 0.84rem;
+      user-select: text;
+    }
+
+    .modal-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .m-btn {
+      padding: 9px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .m-btn.save {
+      background: linear-gradient(135deg, #00c6ff, #0072ff);
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="phone-frame">
+    <div class="horizon-glow" id="horizonGlow"></div>
+    <video id="intruderVideo" autoplay playsinline muted style="display:none;"></video>
+
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <button class="circle-btn" onclick="closeSheetAndReset()" title="Home Orb">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 3a9 9 0 0 1 9 9"></path>
+        </svg>
+      </button>
+
+      <div class="nav-pills">
+        <button class="nav-tab active" id="tabOrb" onclick="switchView('orb')">Orb AI</button>
+        <button class="nav-tab" id="tabHub" onclick="switchView('hub')">AI Hub</button>
+        <button class="nav-tab" id="tabVoice" onclick="switchView('voice')">Voice</button>
+      </div>
+
+      <button class="circle-btn" onclick="openSettings()" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- VIEW 1: 3D RIBBON ORB & SHEET -->
+    <section class="view-panel active" id="viewOrb">
+      <div class="orb-stage" id="orbStage">
+        <div class="orb-wrapper" onclick="triggerNativeOrWebVoice()" title="Tap Orb to Speak">
+          <canvas id="orbGL" width="360" height="360" style="display:none"></canvas>
+          <canvas id="ribbonCanvas" width="360" height="360"></canvas>
+        </div>
+
+        <div class="hero-copy" id="heroCopy">
+          <div class="greeting-sub" id="greetingSub">Hello Boss</div>
+          <h1 class="greeting-main">How can I help<br>you today?</h1>
+          <div class="wake-pill" onclick="triggerNativeOrWebVoice()">
+            <span>🎙️</span> <span id="bridgeStatusText">Tap Orb or Mic to Speak</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-quick-row">
+        <button class="quick-pill-btn" onclick="triggerPrompt('flashlight on')">🔦 Torch</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('open whatsapp')">💬 WhatsApp</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('open youtube')">▶ YouTube</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('wifi settings')">📶 Wi-Fi</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('volume up')">🔊 Volume +</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('screenshot')">📸 Screenshot</button>
+        <button class="quick-pill-btn" onclick="triggerPrompt('siren on')">🚨 Anti-Theft</button>
+      </div>
+
+      <div class="found-copy" id="foundCopy">
+        <h2>Great!<br>Here is what<br>I found</h2>
+      </div>
+
+      <!-- Slide-Up Frosted Glass Result Sheet -->
+      <div class="frosted-sheet" id="resultSheet">
+        <div class="sheet-grab" id="sheetGrab" onclick="closeSheetAndReset()" title="Close"><span class="sheet-handle"></span></div>
+        <div class="sheet-top-bar">
+          <div class="user-query-pill" id="sheetQueryPill">Command</div>
+        </div>
+
+        <div class="sheet-scroll-body" id="sheetBody">
+          <div class="mj-answer-text" id="sheetAnswerText"></div>
+        </div>
+
+        <div class="sheet-followup">
+          <input type="text" id="followupInput" placeholder="Ask follow-up or command..." onkeydown="if(event.key==='Enter') submitFollowup()" />
+          <button class="wave-trigger-btn" onclick="submitFollowup()">➤</button>
+        </div>
+      </div>
+
+      <!-- Bottom Input Pill -->
+      <div class="bottom-dock">
+        <div class="morph-pill" id="morphPill">
+          <div class="pill-input-wrap">
+            <input
+              type="text"
+              id="mainAskInput"
+              class="ask-input"
+              placeholder="Ask anything…"
+              autocomplete="off"
+              oninput="document.getElementById('morphPill').classList.toggle('has-text', this.value.trim().length > 0)"
+              onkeydown="if(event.key==='Enter') submitMainQuery()"
+            />
+            <button class="icon-btn wave-btn" onclick="triggerNativeOrWebVoice()" title="Speak" aria-label="Speak">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 10v4M7 7v10M11 3v18M15 8v8M19 6v12M22 11v2"></path></svg>
+            </button>
+            <button class="icon-btn send-btn" onclick="submitMainQuery()" title="Send" aria-label="Send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+            </button>
+          </div>
+
+          <div class="searching-indicator">
+            <div class="pulse-dots"><span></span><span></span><span></span></div>
+            <span id="searchingLabel">Searching…</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: BENTO AI HUB -->
+    <section class="view-panel" id="viewHub">
+      <div class="hub-scroll">
+        <div class="hub-hero">
+          <h1 id="hubTitle">Hi, Boss!</h1>
+          <p>All Systems Connected • Native Android Bridge</p>
+        </div>
+
+        <div class="engine-grid">
+          <div class="engine-card selected" id="engGemini" onclick="selectEngine('gemini')">
+            <div class="engine-icon">✦</div>
+            <div class="engine-name">Gemini / Free</div>
+          </div>
+          <div class="engine-card" id="engGroq" onclick="selectEngine('groq')">
+            <div class="engine-icon">⚡</div>
+            <div class="engine-name">Groq 3.3</div>
+          </div>
+          <div class="engine-card" id="engOpenRouter" onclick="selectEngine('openrouter')">
+            <div class="engine-icon">🌐</div>
+            <div class="engine-name">OpenRouter</div>
+          </div>
+        </div>
+
+        <div class="bento-grid">
+          <div class="bento-box tall" onclick="triggerNativeOrWebVoice()">
+            <div class="bento-badge">🎙️</div>
+            <div>
+              <div class="bento-title">Native Voice Command</div>
+              <div class="bento-desc">Speak in Gujarati, Hindi or English to control phone</div>
+            </div>
+          </div>
+          <div class="bento-box" onclick="triggerPrompt('flashlight on')">
+            <div class="bento-badge">🔦</div>
+            <div><div class="bento-title">Flashlight</div><div class="bento-desc">Torch ચાલુ કરો</div></div>
+          </div>
+          <div class="bento-box" onclick="triggerPrompt('open whatsapp')">
+            <div class="bento-badge">💬</div>
+            <div><div class="bento-title">WhatsApp</div><div class="bento-desc">App ખોલો</div></div>
+          </div>
+          <div class="bento-box" onclick="triggerPrompt('siren on')">
+            <div class="bento-badge">🚨</div>
+            <div><div class="bento-title">Anti-Theft</div><div class="bento-desc">ફોન હલે તો સાયરન</div></div>
+          </div>
+          <div class="bento-box" onclick="triggerPrompt('read screen')">
+            <div class="bento-badge">👁️</div>
+            <div><div class="bento-title">Read Screen</div><div class="bento-desc">સ્ક્રીન પર શું છે તે વાંચો</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: PARTICLE VOICE CHAT -->
+    <section class="view-panel" id="viewVoice">
+      <div class="voice-screen">
+        <div class="voice-status-label" id="voiceStateLabel">Tap Red Mic to Speak</div>
+
+        <canvas id="particleCanvas" width="420" height="420" onclick="triggerNativeOrWebVoice()"></canvas>
+
+        <div class="voice-headline">
+          Speak Naturally As<br><b>MJ Listens And<br>Executes Instantly</b>
+        </div>
+
+        <div class="voice-bars" id="voiceBars">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <div class="voice-controls-row">
+          <button class="circle-btn" onclick="stopVoiceSession(); switchView('orb')">✕</button>
+          <button class="red-mic-orb" id="redMicBtn" onclick="triggerNativeOrWebVoice()">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+            </svg>
+          </button>
+          <button class="circle-btn" onclick="switchView('orb')">✓</button>
+        </div>
+
+        <div class="voice-timer" id="voiceTimer">Ready</div>
+      </div>
+    </section>
+
+    <div class="home-indicator"></div>
+
+    <!-- Settings Modal -->
+    <div class="settings-modal" id="settingsModal">
+      <div class="settings-card">
+        <h3>⚙️ MJ AI Brain & Profile</h3>
+        <p style="font-size:0.74rem;color:#7ce8ff;margin-bottom:8px;">✓ Built-in Free AI is already active! Optional keys below:</p>
+
+        <label class="field-lbl">Your Name</label>
+        <input type="text" id="userNameInp" class="field-inp" placeholder="e.g. Mukeshbhai / Parth" />
+
+        <label class="field-lbl">Google Gemini API Key (Optional)</label>
+        <input type="password" id="geminiKey" class="field-inp" placeholder="AIzaSy..." />
+
+        <label class="field-lbl">Groq Cloud API Key (Optional)</label>
+        <input type="password" id="groqKey" class="field-inp" placeholder="gsk_..." />
+
+        <label class="field-lbl">OpenRouter API Key (Optional)</label>
+        <input type="password" id="openrouterKey" class="field-inp" placeholder="sk-or-v1-..." />
+
+        <label class="field-lbl">Voice Language</label>
+        <select id="voiceLang" class="field-inp" style="background:#0d152c;">
+          <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+          <option value="hi-IN">Hindi (हिन्दी)</option>
+          <option value="en-IN">English (India)</option>
+        </select>
+
+        <div class="modal-btns">
+          <button class="m-btn" onclick="closeSettings()">Close</button>
+          <button class="m-btn save" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* =========================================================
+       0. SAFE STORAGE & NATIVE ANDROID BRIDGE CHECK
+    ========================================================= */
+    const MJSafeStore = {
+      _mem: {},
+      get(key) {
+        try { return localStorage.getItem(key) || this._mem[key] || ''; }
+        catch (e) { return this._mem[key] || ''; }
+      },
+      set(key, val) {
+        this._mem[key] = val;
+        try { localStorage.setItem(key, val); } catch (e) {}
+      }
+    };
+
+    function hasNativeBridge() {
+      return typeof window.MJNativeBridge !== 'undefined' && window.MJNativeBridge !== null;
+    }
+
+    window.addEventListener('load', () => {
+      const st = document.getElementById('bridgeStatusText');
+      if (hasNativeBridge()) {
+        const missing = BRIDGE_METHODS.filter(m => typeof window.MJNativeBridge[m] !== 'function');
+        st.innerText = missing.length ? `APK માં ${missing.length} function ખૂટે છે ⚠️` : 'Native Android Control Active ✓';
+        if (missing.length) console.warn('MJBridge missing:', missing.join(', '));
+      }
+    });
+
+    /* =========================================================
+       1. 3D RIBBON ORB & PARTICLE SPHERE ANIMATIONS
+    ========================================================= */
+    const viewOrbEl = document.getElementById('viewOrb');
+    const viewVoiceEl = document.getElementById('viewVoice');
+    const rCanvas = document.getElementById('ribbonCanvas');
+    const rCtx = rCanvas.getContext('2d');
+    let ribbonSpeed = 0.022;
+    let ribbonPhase = 0;
+
+    /* ---- WebGL glass orb (falls back to the 2D ribbon orb if WebGL is unavailable) ---- */
+    let orbGL = null, orbMorph = 0;
+    const ORB_VS = 'attribute vec2 aPos;varying vec2 vUv;void main(){vUv=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}';
+    const ORB_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 vUv;
+uniform float uPhase;
+uniform float uMorph;
+mat3 rotY(float a){float c=cos(a),s=sin(a);return mat3(c,0.0,-s,0.0,1.0,0.0,s,0.0,c);}
+mat3 rotX(float a){float c=cos(a),s=sin(a);return mat3(1.0,0.0,0.0,0.0,c,s,0.0,-s,c);}
+float ln(float b,float w){return w/(abs(b)+w);}
+void main(){
+  vec2 p = vUv*2.0-1.0;
+  float R = 0.72;
+  vec2 s = p/R;
+  float d2 = dot(s,s);
+  float d = sqrt(d2);
+  float body = 1.0 - smoothstep(0.985,1.0,d);
+  vec3 col = vec3(0.0);
+  if (d < 1.0) {
+    float z = sqrt(1.0 - d2);
+    vec3 n = vec3(s, z);
+    vec3 q = rotY(uPhase) * rotX(0.55 + 0.35*sin(uPhase)) * n;
+    float w = 0.085 + 0.04*uMorph;
+    float b1 = sin(q.x*3.0 + 1.7*sin(q.y*2.0 + 2.0*uPhase) + uPhase);
+    float b2 = sin(q.y*3.2 + 1.9*sin(q.z*2.0 - uPhase) + 3.0*uPhase);
+    float b3 = sin(q.z*2.4 + 1.5*sin(q.x*3.0 + uPhase) - 2.0*uPhase);
+    float rim = pow(1.0 - z, 2.2);
+    float vis = 0.20 + 1.35*rim;
+    vec3 lines = vec3(0.25,0.62,1.0)*(ln(b1,w)*0.80 + 0.22*ln(b1,w*5.0)) + vec3(0.65,0.90,1.0)*(ln(b2,w*0.7)*0.70 + 0.18*ln(b2,w*5.0)) + vec3(0.08,0.35,1.0)*(ln(b3,w*1.2)*0.85 + 0.25*ln(b3,w*5.0));
+    vec3 inner = vec3(0.008,0.03,0.10)*(0.5+0.5*z);
+    vec3 fres = vec3(0.12,0.48,1.0)*pow(1.0 - z, 3.0)*1.5;
+    vec3 L = normalize(vec3(0.85,0.25,0.45));
+    vec3 spec = vec3(0.70,0.90,1.0)*pow(max(dot(n,L),0.0), 20.0)*1.1;
+    col = inner + lines*vis + fres + spec;
+    float shade = mix(1.0, smoothstep(-0.95, 0.55, s.x*0.85 + s.y*0.35), uMorph*0.9);
+    col *= shade * body;
+  }
+  float r = length(p);
+  col += vec3(0.10,0.38,1.0) * exp(-max(r-R,0.0)*6.5) * (0.28 + 0.18*uMorph) * (1.0-body) * (1.0 - smoothstep(0.78, 0.98, r));
+  col = min(col, vec3(1.0));
+  float a = max(max(max(col.r,col.g),col.b), body*0.92);
+  gl_FragColor = vec4(col, a);
+}`;
+
+    function initOrbGL() {
+      const cv = document.getElementById('orbGL');
+      if (!cv) return false;
+      try {
+        const gl = cv.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false }) || cv.getContext('experimental-webgl');
+        if (!gl) return false;
+        const mk = (type, src) => { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null; };
+        const vs = mk(gl.VERTEX_SHADER, ORB_VS), fs = mk(gl.FRAGMENT_SHADER, ORB_FS);
+        if (!vs || !fs) return false;
+        const pr = gl.createProgram();
+        gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return false;
+        gl.useProgram(pr);
+        gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(pr, 'aPos');
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        orbGL = { gl, uPhase: gl.getUniformLocation(pr, 'uPhase'), uMorph: gl.getUniformLocation(pr, 'uMorph') };
+        cv.addEventListener('webglcontextlost', e => { e.preventDefault(); orbGL = null; cv.style.display = 'none'; rCanvas.style.display = 'block'; });
+        cv.style.display = 'block';
+        rCanvas.style.display = 'none';
+        return true;
+      } catch (e) { orbGL = null; return false; }
+    }
+
+    function renderOrbGL() {
+      const gl = orbGL.gl;
+      orbMorph += ((ribbonSpeed > 0.05 ? 1 : 0) - orbMorph) * 0.06;
+      gl.viewport(0, 0, 360, 360);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(orbGL.uPhase, (ribbonPhase * 0.35) % (Math.PI * 2));
+      gl.uniform1f(orbGL.uMorph, orbMorph);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    initOrbGL();
+
+    function drawRibbonOrb() {
+      if (document.hidden || !viewOrbEl.classList.contains('active')) { requestAnimationFrame(drawRibbonOrb); return; }
+      if (orbGL) { ribbonPhase += ribbonSpeed; renderOrbGL(); requestAnimationFrame(drawRibbonOrb); return; }
+      const w = rCanvas.width, h = rCanvas.height, cx = w / 2, cy = h / 2, radius = 122;
+      rCtx.clearRect(0, 0, w, h);
+      ribbonPhase += ribbonSpeed;
+
+      const halo = rCtx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius * 1.38);
+      halo.addColorStop(0, 'rgba(15, 75, 255, 0.35)');
+      halo.addColorStop(0.6, 'rgba(0, 140, 255, 0.18)');
+      halo.addColorStop(1, 'transparent');
+      rCtx.fillStyle = halo;
+      rCtx.beginPath();
+      rCtx.arc(cx, cy, radius * 1.38, 0, Math.PI * 2);
+      rCtx.fill();
+
+      const coreGrad = rCtx.createRadialGradient(cx - 35, cy - 35, 15, cx, cy, radius);
+      coreGrad.addColorStop(0, 'rgba(30, 90, 220, 0.38)');
+      coreGrad.addColorStop(0.55, 'rgba(6, 18, 52, 0.88)');
+      coreGrad.addColorStop(1, 'rgba(2, 8, 28, 0.96)');
+      rCtx.fillStyle = coreGrad;
+      rCtx.beginPath();
+      rCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      rCtx.fill();
+
+      rCtx.save();
+      rCtx.beginPath();
+      rCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      rCtx.clip();
+      rCtx.globalCompositeOperation = 'screen';
+
+      const ribbonConfigs = [
+        { tiltX: 0.55, tiltY: 0.35, speedMult: 1.0, width: 14, color: 'rgba(60, 165, 255, 0.85)' },
+        { tiltX: -0.45, tiltY: 0.65, speedMult: -0.8, width: 10, color: 'rgba(140, 215, 255, 0.75)' },
+        { tiltX: 0.2, tiltY: -0.6, speedMult: 1.3, width: 8, color: 'rgba(0, 110, 255, 0.7)' }
+      ];
+
+      ribbonConfigs.forEach((cfg) => {
+        rCtx.beginPath();
+        for (let i = 0; i <= 72; i++) {
+          const t = (i / 72) * Math.PI * 2;
+          const angle = t + ribbonPhase * cfg.speedMult;
+          const x3d = Math.cos(angle) * radius;
+          const y3d = Math.sin(angle) * radius * Math.sin(cfg.tiltX + Math.cos(ribbonPhase * 0.5) * 0.25);
+          const z3d = Math.sin(angle) * radius * Math.cos(cfg.tiltY);
+          const scale = 1 + (z3d / (radius * 2.6));
+          const px = cx + x3d * scale * 0.88;
+          const py = cy + y3d * scale * 0.88;
+          if (i === 0) rCtx.moveTo(px, py);
+          else rCtx.lineTo(px, py);
+        }
+        rCtx.strokeStyle = cfg.color;
+        rCtx.lineWidth = cfg.width;
+        rCtx.stroke();
+        rCtx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        rCtx.lineWidth = 2;
+        rCtx.stroke();
+      });
+      rCtx.restore();
+
+      rCtx.strokeStyle = 'rgba(150, 215, 255, 0.42)';
+      rCtx.lineWidth = 2;
+      rCtx.beginPath();
+      rCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+      rCtx.stroke();
+
+      requestAnimationFrame(drawRibbonOrb);
+    }
+    drawRibbonOrb();
+
+    const pCanvas = document.getElementById('particleCanvas');
+    const pCtx = pCanvas.getContext('2d');
+    let pAngle = 0, voicePulseAmp = 0;
+
+    function drawParticleSphere() {
+      if (document.hidden || !viewVoiceEl.classList.contains('active')) { requestAnimationFrame(drawParticleSphere); return; }
+      const w = pCanvas.width, h = pCanvas.height, cx = w / 2, cy = h / 2, rad = 148;
+      pCtx.clearRect(0, 0, w, h);
+      pAngle += 0.015;
+      for (let i = 1; i < 20; i++) {
+        const theta = (i / 20) * Math.PI;
+        const sinTheta = Math.sin(theta), cosTheta = Math.cos(theta);
+        for (let j = 0; j < 40; j++) {
+          const phi = (j / 40) * Math.PI * 2 + pAngle;
+          const r = rad + Math.sin(theta * 5 + pAngle * 3) * voicePulseAmp;
+          const x = r * sinTheta * Math.cos(phi);
+          const y = r * cosTheta;
+          const z = r * sinTheta * Math.sin(phi);
+          if (z > -rad * 0.45) {
+            const depth = (z + rad) / (2 * rad);
+            const hue = 195 + (y / rad) * 45 + (x / rad) * 25;
+            pCtx.fillStyle = `hsla(${hue}, 95%, 62%, ${depth * 0.95})`;
+            pCtx.beginPath();
+            pCtx.arc(cx + x, cy + y, Math.max(1.2, depth * 4), 0, Math.PI * 2);
+            pCtx.fill();
+          }
+        }
+      }
+      requestAnimationFrame(drawParticleSphere);
+    }
+    drawParticleSphere();
+
+    /* =========================================================
+       2. NAVIGATION & SETTINGS
+    ========================================================= */
+    let activeEngine = 'gemini';
+    let torchStream = null;
+    let torchState = false;
+    let activeRecognition = null;
+    let antiTheftArmed = false;
+    let sirenInterval = null;
+    let lastAccX = null, lastAccY = null, lastAccZ = null;
+
+    function loadSavedSettings() {
+      const savedName = MJSafeStore.get('mj_user_name') || 'Boss';
+      document.getElementById('userNameInp').value = MJSafeStore.get('mj_user_name') || '';
+      document.getElementById('geminiKey').value = MJSafeStore.get('mj_gemini_key') || '';
+      document.getElementById('groqKey').value = MJSafeStore.get('mj_groq_key') || '';
+      document.getElementById('openrouterKey').value = MJSafeStore.get('mj_openrouter_key') || '';
+      document.getElementById('voiceLang').value = MJSafeStore.get('mj_lang') || 'gu-IN';
+      document.getElementById('greetingSub').innerText = `Hello ${savedName}`;
+      document.getElementById('hubTitle').innerText = `Hi, ${savedName}!`;
+    }
+    loadSavedSettings();
+    selectEngine(MJSafeStore.get('mj_engine') || 'gemini');
+
+    function switchView(view) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      if (view === 'orb') {
+        document.getElementById('viewOrb').classList.add('active');
+        document.getElementById('tabOrb').classList.add('active');
+      } else if (view === 'hub') {
+        document.getElementById('viewHub').classList.add('active');
+        document.getElementById('tabHub').classList.add('active');
+      } else if (view === 'voice') {
+        document.getElementById('viewVoice').classList.add('active');
+        document.getElementById('tabVoice').classList.add('active');
+      }
+    }
+
+    function selectEngine(eng) {
+      activeEngine = eng;
+      MJSafeStore.set('mj_engine', eng);
+      document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('selected'));
+      if (eng === 'gemini') document.getElementById('engGemini').classList.add('selected');
+      if (eng === 'groq') document.getElementById('engGroq').classList.add('selected');
+      if (eng === 'openrouter') document.getElementById('engOpenRouter').classList.add('selected');
+    }
+
+    function closeSheetAndReset() {
+      switchView('orb');
+      document.getElementById('resultSheet').classList.remove('open');
+      viewOrbEl.classList.remove('sheet-open', 'busy');
+      document.getElementById('foundCopy').classList.remove('show');
+      document.getElementById('heroCopy').classList.remove('hide');
+      document.getElementById('morphPill').classList.remove('searching-mode');
+      document.getElementById('horizonGlow').classList.remove('searching');
+      ribbonSpeed = 0.022;
+    }
+
+    function triggerPrompt(text) {
+      switchView('orb');
+      document.getElementById('mainAskInput').value = text;
+      submitMainQuery();
+    }
+
+    function submitFollowup() {
+      const inp = document.getElementById('followupInput');
+      const val = inp.value.trim();
+      if (!val) return;
+      inp.value = '';
+      document.getElementById('resultSheet').classList.remove('open');
+      setTimeout(() => {
+        document.getElementById('mainAskInput').value = val;
+        submitMainQuery();
+      }, 250);
+    }
+
+    /* =========================================================
+       3. ANTI-THEFT SIREN GUARD
+    ========================================================= */
+    let sirenCtx = null, armTimer = null;
+    function getSirenCtx() {
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return null;
+      if (!sirenCtx) sirenCtx = new A();
+      if (sirenCtx.state === 'suspended') { try { sirenCtx.resume(); } catch (e) {} }
+      return sirenCtx;
+    }
+
+    function playLoudSirenPulse() {
+      try {
+        const ctx = getSirenCtx();
+        if (ctx) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(780, ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(1750, ctx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.95, ctx.currentTime);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.6);
+        }
+      } catch (e) {}
+      try { if (navigator.vibrate) navigator.vibrate([400, 150, 400]); } catch (e) {}
+    }
+
+    function handleMotionGuard(e) {
+      if (!antiTheftArmed) return;
+      const acc = e.accelerationIncludingGravity;
+      if (!acc || acc.x == null) return;
+      if (lastAccX === null) {
+        lastAccX = acc.x; lastAccY = acc.y; lastAccZ = acc.z;
+        return;
+      }
+      const delta = Math.abs(acc.x - lastAccX) + Math.abs(acc.y - lastAccY) + Math.abs(acc.z - lastAccZ);
+      lastAccX = acc.x; lastAccY = acc.y; lastAccZ = acc.z;
+      if (delta > 6.5 && !sirenInterval) {
+        document.getElementById('horizonGlow').classList.add('siren-alert');
+        if (hasNativeBridge() && typeof window.MJNativeBridge.setVolume === 'function') { try { window.MJNativeBridge.setVolume('max'); } catch (er) {} }
+        playLoudSirenPulse();
+        speakText('સાવધાન! ફોનને અડકવામાં આવ્યો છે!');
+        sirenInterval = setInterval(() => {
+          if (!antiTheftArmed) { clearInterval(sirenInterval); sirenInterval = null; return; }
+          playLoudSirenPulse();
+        }, 750);
+      }
+    }
+
+    function armAntiTheftGuard(mode) {
+      const m = (mode || '').toLowerCase();
+      const isOff = m.includes('off') || m.includes('disarm') || m.includes('stop') || m.includes('બંધ');
+      if (isOff) {
+        antiTheftArmed = false;
+        clearTimeout(armTimer);
+        if (sirenInterval) { clearInterval(sirenInterval); sirenInterval = null; }
+        document.getElementById('horizonGlow').classList.remove('siren-alert');
+        window.removeEventListener('devicemotion', handleMotionGuard);
+        return 'SIREN DISARMED ✅';
+      }
+      getSirenCtx(); // unlock audio now, while the user has just interacted
+      try {
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') DeviceMotionEvent.requestPermission().catch(() => {});
+      } catch (e) {}
+      antiTheftArmed = true;
+      lastAccX = null; lastAccY = null; lastAccZ = null;
+      window.removeEventListener('devicemotion', handleMotionGuard);
+      clearTimeout(armTimer);
+      // 5 sec delay so putting the phone down does not set the siren off
+      armTimer = setTimeout(() => window.addEventListener('devicemotion', handleMotionGuard), 5000);
+      return 'ANTI-THEFT 5 સેકન્ડ પછી ARMED 🚨';
+    }
+
+    /* =========================================================
+       4. CRASH-FREE NATIVE ANDROID + WEB EXECUTOR
+    ========================================================= */
+    function extractDynamicAppName(query) {
+      const cleaned = query.trim();
+      // multi-step requests ("open youtube and search X") must go to the AI planner, not be read as one app name
+      if (/\s(and|then|&|search|play|send|type|અને|પછી|और|फिर)\s/i.test(cleaned) || cleaned.split(/\s+/).length > 5) return null;
+      const engMatch = cleaned.match(/^(?:please\s+)?(?:open|launch|start|run)\s+(.+?)(?:\s+app|\s+application)?$/i);
+      if (engMatch && engMatch[1]) return engMatch[1].trim();
+
+      const localMatch = cleaned.match(/^(.+?)\s+(?:એપ\s+)?(?:ખોલ|ખોલો|ચાલુ\s*કર|ચાલુ\s*કરો|open\s*kar|open\s*karo|chalu\s*kar)$/i);
+      if (localMatch && localMatch[1]) return localMatch[1].trim();
+      return null;
+    }
+
+    /* ---- Real-result helpers: every action returns {ok, badge, note, link} (no more fake "done") ---- */
+    const BRIDGE_METHODS = ['openApp','toggleTorch','openSetting','makeCall','openWhatsApp','sendSms','playMusic','openYouTubeSearch','openUrl','setAlarm','setVolume','speak','startVoice','isA11yOn','clickText','typeText','globalAction','scroll','readScreen'];
+    const NO_NATIVE = 'ફોન કંટ્રોલ માટે MJ નું Android APK (MJBridge સાથે) જોઈએ — બ્રાઉઝર/PWA માંથી આ થઈ શકતું નથી.';
+    const okR = (badge, link) => ({ ok: true, badge, link: link || '' });
+    const failR = note => ({ ok: false, badge: 'FAILED', note });
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const esc = t => String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const fmt = t => esc(t).replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+    const A11Y_MSG = 'Accessibility service બંધ છે. Settings → Accessibility → MJ AI ચાલુ કરો (બોલો: "accessibility settings").';
+    const NICE = { openApp: 'APP OPENED ✓', toggleTorch: 'FLASHLIGHT ✓', openSetting: 'SETTINGS ✓', makeCall: 'CALLING 📞', openWhatsApp: 'WHATSAPP ✓',
+      sendSms: 'SMS ✓', playMusic: 'PLAYING ▶', openYouTubeSearch: 'YOUTUBE ✓', openUrl: 'OPENED ✓', setAlarm: 'ALARM ✓', setVolume: 'VOLUME ✓',
+      clickText: 'TAPPED ✓', typeText: 'TYPED ✓', globalAction: 'DONE ✓', scroll: 'SCROLLED ✓', readScreen: 'SCREEN READ ✓', isA11yOn: 'ACCESSIBILITY ON' };
+    // Accessibility actions (tap/type/scroll in ANY app). Checks the service is ON first and says how to turn it on.
+    function a11y(name, ...args) {
+      if (!hasNativeBridge()) return failR(NO_NATIVE);
+      const on = native('isA11yOn');
+      if (!on.ok) return on;
+      return native(name, ...args);
+    }
+
+    // Runs a native method. null = no native bridge (use web fallback); otherwise a REAL result.
+    function native(name, ...args) {
+      if (!hasNativeBridge()) return null;
+      const b = window.MJNativeBridge;
+      if (typeof b[name] !== 'function') return failR(`APK માં "${name}" function નથી — નવું MJBridge.java ઉમેરી APK ફરી બનાવો.`);
+      try {
+        const out = b[name](...args);
+        const s = (out === undefined || out === null) ? 'OK' : String(out);
+        // a Java boolean "false" from isA11yOn means the accessibility service is OFF (it used to count as success)
+        if (name === 'isA11yOn' && (out === false || /^(false|0|off|disabled|no)$/i.test(s.trim()))) return failR(A11Y_MSG);
+        if (/^ERR/i.test(s)) return failR(s.replace(/^ERR\s*:?\s*/i, '') || 'Native error');
+        const clean = s.replace(/^OK\s*:?\s*/i, '').trim();
+        return okR(clean && !/^(true|ok)$/i.test(clean) ? clean : (NICE[name] || name));
+      } catch (e) { return failR(String((e && e.message) || e)); }
+    }
+
+    function parseAlarmTime(t) {
+      t = (t || '').toLowerCase().replace(/[૦-૯]/g, d => '૦૧૨૩૪૫૬૭૮૯'.indexOf(d)).replace(/[०-९]/g, d => '०१२३४५६७८९'.indexOf(d));
+      const m = t.match(/(\d{1,2})(?:[:. ](\d{2}))?/);
+      if (!m) return null;
+      let h = +m[1], mi = +(m[2] || 0);
+      const night = /રાત|night|रात/.test(t);
+      const pm = /pm|સાંજ|બપોર|evening|afternoon|शाम|दोपहर/.test(t);
+      const am = /am|સવાર|morning|सुबह/.test(t);
+      if (night) { if (h === 12) h = 0; else if (h >= 6 && h < 12) h += 12; }
+      else if (pm && h < 12) h += 12;
+      if (am && h === 12) h = 0;
+      return (h > 23 || mi > 59) ? null : [h, mi];
+    }
+
+    async function triggerAndroidIntent(cmd) {
+      const intent = (cmd.intent || 'NONE').toUpperCase();
+      const target = (cmd.target || '').trim();
+      const value = (cmd.value || '').trim();
+      const pkg = (cmd.pkg || '').trim();
+      const arg = value || target;
+      const enc = encodeURIComponent;
+      if (intent === 'NONE') return null;
+
+      try {
+        switch (intent) {
+          case 'OPEN_APP': {
+            if (!target && !pkg) return failR('કઈ app ખોલવી?');
+            const r = native('openApp', target, pkg); if (r) return r;
+            const web = { whatsapp: 'https://web.whatsapp.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com',
+              maps: 'https://maps.google.com', gmail: 'https://mail.google.com', facebook: 'https://www.facebook.com' }[target.toLowerCase()];
+            return web ? okR('WEB: ' + target.toUpperCase(), web) : failR(NO_NATIVE);
+          }
+          case 'TORCH': {
+            const on = !/off|બંધ|band|बंद/i.test(arg);
+            const r = native('toggleTorch', on);
+            if (r) { if (r.ok) r.badge = 'FLASHLIGHT: ' + (on ? 'ON 🔦' : 'OFF'); return r; }
+            if (on) {
+              try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera api');
+                torchStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                await torchStream.getVideoTracks()[0].applyConstraints({ advanced: [{ torch: true }] });
+                return okR('FLASHLIGHT: ON 🔦');
+              } catch (e) {
+                if (torchStream) { torchStream.getTracks().forEach(t => t.stop()); torchStream = null; }
+                return failR('આ બ્રાઉઝરમાં ટોર્ચ સપોર્ટ નથી — MJ નું Android APK વાપરો.');
+              }
+            }
+            if (torchStream) { torchStream.getTracks().forEach(t => t.stop()); torchStream = null; }
+            return okR('FLASHLIGHT: OFF');
+          }
+          case 'SETTINGS':
+            return native('openSetting', target || value || 'settings') || failR(NO_NATIVE);
+          case 'CALL': {
+            const raw = target || value;
+            const num = raw.replace(/[^\d+]/g, '');
+            const who = num.length >= 3 ? num : raw;
+            if (!who) return failR('કોને કોલ કરવો? નામ કે નંબર બોલો.');
+            const r = native('makeCall', who); if (r) return r;
+            return num ? okR('DIAL: ' + num, 'tel:' + num) : failR(NO_NATIVE);
+          }
+          case 'WHATSAPP': {
+            const who = target.replace(/[^\d+]/g, '').length >= 6 ? target.replace(/[^\d+]/g, '') : target;
+            const msg = value || '';
+            const r = native('openWhatsApp', who, msg); if (r) return r;
+            const ph = who.replace(/\D/g, '');
+            return ph ? okR('WHATSAPP', `https://wa.me/${ph}?text=${enc(msg)}`) : failR(NO_NATIVE);
+          }
+          case 'SMS': {
+            const who = target.replace(/[^\d+]/g, '').length >= 3 ? target.replace(/[^\d+]/g, '') : target;
+            const r = native('sendSms', who, value); if (r) return r;
+            return /^\+?\d+$/.test(who) ? okR('SMS', `sms:${who}?body=${enc(value)}`) : failR(NO_NATIVE);
+          }
+          case 'YOUTUBE_PLAY': case 'MUSIC': {
+            if (!arg) return failR('કયું ગીત/વિડિયો?');
+            const url = `https://www.youtube.com/results?search_query=${enc(arg)}`;
+            const br = hasNativeBridge() ? window.MJNativeBridge : null;
+            const meth = br && typeof br.playMusic === 'function' ? 'playMusic' : (br && typeof br.openYouTubeSearch === 'function' ? 'openYouTubeSearch' : null);
+            if (meth) return native(meth, arg);
+            if (br) { const r2 = native('openUrl', url); if (r2) return r2; }
+            return okR('YOUTUBE: ' + arg.toUpperCase(), url);
+          }
+          case 'GOOGLE_SEARCH': {
+            const url = `https://www.google.com/search?q=${enc(arg)}`;
+            return native('openUrl', url) || okR('GOOGLE: ' + arg.toUpperCase(), url);
+          }
+          case 'NAVIGATE': {
+            const r = native('openUrl', `geo:0,0?q=${enc(arg)}`); if (r) return r;
+            return okR('MAPS: ' + arg.toUpperCase(), `https://www.google.com/maps/search/?api=1&query=${enc(arg)}`);
+          }
+          case 'LOCATION': {
+            const pos = await new Promise(res => navigator.geolocation
+              ? navigator.geolocation.getCurrentPosition(p => res(p.coords), () => res(null), { timeout: 8000 }) : res(null));
+            const q = pos ? `${pos.latitude},${pos.longitude}` : '';
+            const r = native('openUrl', `geo:${q || '0,0'}?q=${q}`); if (r) return r;
+            return okR('MAPS 📍', `https://www.google.com/maps/search/?api=1&query=${q}`);
+          }
+          case 'VOLUME':
+            return native('setVolume', (arg || 'up').toLowerCase()) || failR(NO_NATIVE);
+          case 'ALARM': {
+            const t = parseAlarmTime(arg);
+            if (!t) return failR('એલાર્મનો સમય સમજાયો નહીં. જેમ કે: "alarm 6:30 am".');
+            const r = native('setAlarm', t[0], t[1], 'MJ AI Alarm');
+            if (!r) return failR(NO_NATIVE);
+            if (r.ok) r.badge = `ALARM ${t[0]}:${String(t[1]).padStart(2, '0')} ⏰`;
+            return r;
+          }
+          case 'CLICK':
+            return arg ? a11y('clickText', arg) : failR('શું દબાવવું?');
+          case 'TYPE':
+            return arg ? a11y('typeText', arg) : failR('શું લખવું?');
+          case 'GLOBAL':
+            return a11y('globalAction', (arg || 'back').toLowerCase());
+          case 'SCROLL':
+            return a11y('scroll', /up|ઉપર/i.test(arg) ? 'up' : 'down');
+          case 'READ_SCREEN': {
+            const r = a11y('readScreen');
+            if (r.ok) { r.text = r.badge; r.badge = 'SCREEN READ ✓'; }
+            return r;
+          }
+          case 'WA_SEND': case 'SMS_SEND': {
+            const chk = a11y('isA11yOn'); if (!chk.ok) return chk;
+            const wa = intent === 'WA_SEND';
+            const digits = target.replace(/[^\d+]/g, '');
+            const o = native(wa ? 'openWhatsApp' : 'sendSms', digits.length >= 3 ? digits : target, value);
+            if (!o || !o.ok) return o || failR(NO_NATIVE);
+            await sleep(wa ? 3500 : 2500);
+            let sd = failR('Send બટન મળ્યું નહીં');
+            for (const lbl of ['Send', 'મોકલો', 'भेजें']) { sd = a11y('clickText', lbl); if (sd.ok) break; }
+            return sd.ok ? okR((wa ? 'WHATSAPP' : 'SMS') + ' SENT ✅') : failR('મેસેજ તૈયાર થયો પણ Send બટન દબાયું નહીં. ' + sd.note);
+          }
+          case 'SECURITY_ARM':
+            return okR(armAntiTheftGuard(arg || 'on'));
+          default:
+            return failR('અજાણ્યો કમાન્ડ: ' + intent);
+        }
+      } catch (e) {
+        console.warn('Action error:', e);
+        return failR(String((e && e.message) || e));
+      }
+    }
+
+    /* =========================================================
+       5. MULTI-ENGINE AI BRAIN + 100% FREE BUILT-IN AI FALLBACK
+    ========================================================= */
+    async function fetchT(url, opt, ms = 20000) {
+      const c = new AbortController();
+      const timer = setTimeout(() => c.abort(), ms);
+      try { return await fetch(url, Object.assign({}, opt, { signal: c.signal })); }
+      finally { clearTimeout(timer); }
+    }
+
+    async function callGeminiAPI(key, systemPrompt, userText) {
+      const res = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt + "\nUser Command: " + userText }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+      if (!res.ok) throw new Error('Gemini error');
+      const data = await res.json();
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    }
+
+    async function callGroqAPI(key, systemPrompt, userText) {
+      const res = await fetchT("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userText }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error('Groq error');
+      const data = await res.json();
+      return data?.choices?.[0]?.message?.content || null;
+    }
+
+    async function callOpenRouterAPI(key, systemPrompt, userText) {
+      const res = await fetchT("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-001",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userText }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error('OpenRouter error');
+      const data = await res.json();
+      return data?.choices?.[0]?.message?.content || null;
+    }
+
+    // 100% Free Built-In Keyless AI Brain (Works out of the box with ZERO API Keys!)
+    async function callFreeBuiltInAI(systemPrompt, userText) {
+      const res = await fetchT("https://text.pollinations.ai/openai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userText }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error('Free AI HTTP ' + res.status);
+      const data = await res.json();
+      return data?.choices?.[0]?.message?.content || null;
+    }
+
+    // Photo for an answer card, from the English Wikipedia summary API (null when there is no image).
+    async function wikiCard(title) {
+      try {
+        const r = await fetchT('https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(String(title).trim().replace(/ /g, '_')), {}, 6000);
+        if (!r.ok) return null;
+        const j = await r.json();
+        const img = j && j.thumbnail && j.thumbnail.source;
+        return img ? { title: j.title || String(title), img } : null;
+      } catch (e) { return null; }
+    }
+
+    const chatHistory = [];
+    function buildUserText(userText) {
+      if (!chatHistory.length) return userText;
+      const h = chatHistory.map(x => `User: ${x.q}\nMJ: ${x.a}`).join('\n');
+      return `Earlier conversation (context only, do NOT repeat old actions):\n${h}\n\nCurrent user message: ${userText}`;
+    }
+
+    async function runMJDeepAgent(userText0) {
+      const geminiKey = document.getElementById('geminiKey').value.trim() || MJSafeStore.get('mj_gemini_key');
+      const groqKey = document.getElementById('groqKey').value.trim() || MJSafeStore.get('mj_groq_key');
+      const openrouterKey = document.getElementById('openrouterKey').value.trim() || MJSafeStore.get('mj_openrouter_key');
+      const userName = MJSafeStore.get('mj_user_name') || 'Boss';
+      const userText = buildUserText(userText0);
+
+      const agentSystemPrompt = `You are MJ, an Android phone-control assistant. The user's name is "${userName}".
+Reply in the user's language (Gujarati, Hindi or English; Roman-script Gujarati -> reply in Gujarati script).
+Reply ONLY with valid JSON, exactly this shape:
+{"reply":"short answer, max 2 sentences","intent":"NONE|OPEN_APP|CALL|WHATSAPP|SMS|WA_SEND|SMS_SEND|YOUTUBE_PLAY|GOOGLE_SEARCH|NAVIGATE|ALARM|SETTINGS|TORCH|VOLUME|SECURITY_ARM|LOCATION|CLICK|TYPE|GLOBAL|SCROLL|READ_SCREEN","target":"...","pkg":"...","value":"...","steps":[]}
+Rules:
+- If the user wants a phone action, set intent and fill fields. If it is just a question/chat, intent MUST be NONE.
+- For a task that needs SEVERAL actions, set intent NONE and fill "steps": [{"intent":"...","target":"...","value":"...","wait":ms}, ...] (max 8, run in order; "wait" = ms to wait BEFORE that step, e.g. 2500 after opening an app).
+- Never claim in "reply" that you already did something; the app executes it and reports the real result. Say what you are about to do.
+- OPEN_APP: target=app name in English (e.g. "whatsapp","phonepe","camera"), pkg=exact Android package if sure, else "".
+- CALL: target=number or contact name. WHATSAPP/SMS only prepare a message; WA_SEND/SMS_SEND prepare AND press Send (use when the user says send): target=number or contact name, value=message text.
+- YOUTUBE_PLAY: value=song/video name. GOOGLE_SEARCH: value=query. NAVIGATE: value=place.
+- ALARM: value=time like "6:30 am". SETTINGS: target=wifi|bluetooth|sound|display|accessibility|developer|location|battery|airplane.
+- TORCH: value=on|off. VOLUME: value=up|down|max|mute. SECURITY_ARM: value=on|off.
+- Inside any open app: CLICK value=visible button text or description (e.g. "Search"); TYPE value=text to type into the focused box; SCROLL value=up|down; GLOBAL value=back|home|recents|notifications|quicksettings|lock|screenshot; READ_SCREEN to read what is on screen.
+- Earlier conversation (if shown) is context only: act ONLY on the "Current user message".
+- For informational / travel / how-to questions (intent NONE) you MAY add "sections":[{"h":"short title","p":"1-2 sentences"}] (max 4) and "cards":[English Wikipedia article titles that have a good photo] (max 5). Keep "reply" short.
+- Example "open youtube and search arijit": steps=[{"intent":"OPEN_APP","target":"youtube"},{"intent":"CLICK","value":"Search","wait":2500},{"intent":"TYPE","value":"arijit"}].`;
+
+      // The engine chosen in the AI Hub goes first (if it has a key); the keyless free AI is always the last resort.
+      const queue = [];
+      if (geminiKey) queue.push(['gemini', () => callGeminiAPI(geminiKey, agentSystemPrompt, userText)]);
+      if (groqKey) queue.push(['groq', () => callGroqAPI(groqKey, agentSystemPrompt, userText)]);
+      if (openrouterKey) queue.push(['openrouter', () => callOpenRouterAPI(openrouterKey, agentSystemPrompt, userText)]);
+      queue.sort((a, b) => (b[0] === activeEngine) - (a[0] === activeEngine));
+      queue.push(['free', () => callFreeBuiltInAI(agentSystemPrompt, userText)]);
+
+      let rawResponse = null;
+      for (const [name, providerCall] of queue) {
+        try {
+          rawResponse = await providerCall();
+          if (rawResponse) break;
+        } catch (err) {
+          console.warn('Switching from AI provider ' + name + ':', err);
+        }
+      }
+      if (!rawResponse) return null;
+
+      let cmd;
+      try {
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        cmd = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
+        if (!cmd || typeof cmd !== 'object') throw new Error('not json');
+      } catch (e) {
+        return { html: fmt(rawResponse), speech: rawResponse };   // plain-text answer, nothing to execute
+      }
+
+      try {
+        if (Array.isArray(cmd.steps) && cmd.steps.length) {
+          const reply0 = fmt(cmd.reply);
+          const badges = [];
+          const list = cmd.steps.slice(0, 8);
+          for (let i = 0; i < list.length; i++) {
+            const st = list[i] || {};
+            if (st.wait) await sleep(Math.min(+st.wait || 0, 8000));
+            const r = await triggerAndroidIntent(st);
+            if (r && !r.ok) { const d = done(r); d.html = `${reply0}<br>${d.html}<br><small>(સ્ટેપ ${i + 1} પર અટક્યું)</small>`; return d; }
+            if (r) badges.push(esc(r.badge));
+            if (st.wait === undefined && i < list.length - 1) await sleep(1200);
+          }
+          return { html: `${reply0}<br><span class="exec-badge">⚡ ${badges.join(' → ')}</span>`, speech: cmd.reply || '' };
+        }
+        const res = await triggerAndroidIntent(cmd);
+        const reply = fmt(cmd.reply);
+        if (!res) {
+          let more = '';
+          if (Array.isArray(cmd.sections)) {
+            more += cmd.sections.slice(0, 5).filter(x => x && x.p).map(x => `<div class="ans-h">${esc(x.h || '')}</div><div>${fmt(x.p)}</div>`).join('');
+          }
+          if (Array.isArray(cmd.cards) && cmd.cards.length) {
+            const cards = (await Promise.all(cmd.cards.slice(0, 6).map(wikiCard))).filter(Boolean);
+            if (cards.length) more += '<div class="visual-cards-row">' + cards.map(c => `<div class="img-card" style="background-image:url('${esc(String(c.img).replace(/'/g, '%27'))}')"><span>${esc(c.title)}</span></div>`).join('') + '</div>';
+          }
+          return { html: ((reply ? `<div>${reply}</div>` : '') + more) || 'ઠીક છે.', speech: cmd.reply || 'ઠીક છે.' };
+        }
+        if (!res.ok) return done(res);   // AI said it did it, but it really failed -> tell the truth
+        const badge = esc(res.badge);
+        const txt = res.text ? `<br><small>${esc(res.text)}</small>` : '';
+        const extra = res.link
+          ? `<br><a class="exec-badge" href="${esc(res.link)}" style="text-decoration:none;display:inline-block;margin-top:6px">👉 ખોલવા ટેપ કરો: ${badge}</a>`
+          : `${txt}<br><span class="exec-badge">⚡ ${badge}</span>`;
+        return { html: reply + extra, speech: cmd.reply || '' };
+      } catch (e) {
+        return done(failR(String((e && e.message) || e)));
+      }
+    }
+
+    let busy = false;
+    async function submitMainQuery() {
+      const input = document.getElementById('mainAskInput');
+      const query = input.value.trim();
+      if (!query || busy) return;
+      busy = true;
+      input.value = '';
+      document.getElementById('morphPill').classList.remove('has-text');
+
+      const morphPill = document.getElementById('morphPill');
+      const heroCopy = document.getElementById('heroCopy');
+      const foundCopy = document.getElementById('foundCopy');
+      const resultSheet = document.getElementById('resultSheet');
+      const horizonGlow = document.getElementById('horizonGlow');
+
+      resultSheet.classList.remove('open');
+      viewOrbEl.classList.remove('sheet-open');
+      viewOrbEl.classList.add('busy');
+      heroCopy.classList.add('hide');
+      morphPill.classList.add('searching-mode');
+      horizonGlow.classList.add('searching');
+      document.getElementById('searchingLabel').innerText = 'Searching…';
+      ribbonSpeed = 0.068;
+
+      let finalResult;
+      try { finalResult = await processCommand(query); }
+      catch (e) { finalResult = done(failR(String((e && e.message) || e))); }   // never leave the UI stuck on "Executing..."
+
+      if (!finalResult.err) { foundCopy.classList.add('show'); await sleep(950); }   // "Great! Here is what I found"
+      foundCopy.classList.remove('show');
+      document.getElementById('sheetQueryPill').innerText = query;
+      document.getElementById('sheetAnswerText').innerHTML = finalResult.html;
+      resultSheet.classList.add('open');
+      viewOrbEl.classList.add('sheet-open');
+      morphPill.classList.remove('searching-mode');
+      horizonGlow.classList.remove('searching');
+      ribbonSpeed = 0.024;
+      busy = false;
+
+      chatHistory.push({ q: query, a: String(finalResult.speech || '').replace(/<[^>]*>/g, '').slice(0, 300) });
+      if (chatHistory.length > 6) chatHistory.shift();
+      speakText(finalResult.speech);
+    }
+
+    // Turns a REAL action result into the reply. Success is only claimed when the action really succeeded.
+    function done(res, doneMsg) {
+      if (!res) res = failR('કોઈ જવાબ ન મળ્યો');
+      const badge = esc(res.badge);
+      if (!res.ok) return { html: `⚠️ આ કામ થઈ શક્યું નથી.<br><small>${esc(res.note)}</small><br><span class="exec-badge">❌ ${badge}</span>`, speech: 'માફ કરજો, આ કામ થઈ શક્યું નથી.', err: true };
+      if (res.link) return { html: `તૈયાર છે — નીચેનું બટન દબાવો.<br><a class="exec-badge" href="${esc(res.link)}" style="text-decoration:none;display:inline-block;margin-top:6px">👉 ખોલવા ટેપ કરો: ${badge}</a>`, speech: 'તૈયાર છે, બટન દબાવો.' };
+      const msg = doneMsg || 'થઈ ગયું.';
+      const body = res.text ? `${msg}<br><small>${esc(res.text)}</small>` : msg;
+      return { html: `${body}<br><span class="exec-badge">⚡ ${badge}</span>`, speech: res.text ? 'સ્ક્રીન વાંચી લીધી.' : msg };
+    }
+
+    async function processCommand(query) {
+      const low = query.toLowerCase().trim();
+      const userName = MJSafeStore.get('mj_user_name') || 'Boss';
+      const has = (...k) => k.some(x => low.includes(x));
+      const off = has('off', 'બંધ', 'band', 'disarm', 'stop', 'बंद');
+      const run = c => triggerAndroidIntent(c);
+
+      if (has('flashlight', 'torch', 'ટોર્ચ', 'ફ્લેશલાઈટ', 'ફ્લેશલાઇટ') || (has('લાઈટ', 'લાઇટ') && has('ચાલુ', 'બંધ', ' on', ' off')))
+        return done(await run({ intent: 'TORCH', value: off ? 'off' : 'on' }), `ફ્લેશલાઈટ ${off ? 'બંધ' : 'ચાલુ'} કરી દીધી.`);
+
+      if (has('battery', 'બેટરી') && 'getBattery' in navigator) {
+        try {
+          const bat = await navigator.getBattery();
+          const pct = Math.round(bat.level * 100);
+          const msg = `${esc(userName)}, બેટરી હાલમાં <b>${pct}%</b> છે (${bat.charging ? 'Charging ⚡' : 'Normal'}).`;
+          return { html: `${msg}<br><span class="exec-badge">⚡ BATTERY: ${pct}%</span>`, speech: msg };
+        } catch (e) {}
+      }
+
+      if (has('security', 'siren', 'anti-theft', 'સાયરન'))
+        return done(await run({ intent: 'SECURITY_ARM', value: off ? 'off' : 'on' }), off ? 'Anti-Theft Siren બંધ કર્યું.' : 'Anti-Theft ચાલુ — 5 સેકન્ડ પછી ફોન હલશે તો સાયરન વાગશે. બંધ કરવા "siren off" બોલો.');
+
+      if (has('volume', 'અવાજ', 'sound') && has('up', 'down', 'max', 'mute', 'વધાર', 'ઘટાડ', 'ફુલ', 'મ્યૂટ', 'increase', 'decrease')) {
+        const mode = has('mute', 'મ્યૂટ') ? 'mute' : has('max', 'full', 'ફુલ') ? 'max' : has('down', 'ઘટાડ', 'decrease', 'low') ? 'down' : 'up';
+        return done(await run({ intent: 'VOLUME', value: mode }), 'વોલ્યુમ બદલી દીધું.');
+      }
+
+      const sysMap = [
+        { keys: ['wi-fi', 'wifi', 'વાઇફાઇ'], target: 'wifi', label: 'Wi-Fi Settings' },
+        { keys: ['bluetooth', 'બ્લૂટૂથ'], target: 'bluetooth', label: 'Bluetooth Settings' },
+        { keys: ['sound', 'volume', 'અવાજ'], target: 'sound', label: 'Sound Settings' },
+        { keys: ['display', 'brightness', 'બ્રાઇટનેસ'], target: 'display', label: 'Display & Brightness' },
+        { keys: ['accessibility', 'એક્સેસિબિલિટી'], target: 'accessibility', label: 'Accessibility Settings' },
+        { keys: ['developer', 'ડેવલપર'], target: 'developer', label: 'Developer Options' },
+        { keys: ['app info', 'restricted', 'એપ માહિતી'], target: 'appinfo', label: 'MJ App Info' }
+      ];
+      for (const s of sysMap) if (has(...s.keys)) return done(await run({ intent: 'SETTINGS', target: s.target }), `${s.label} ખોલી દીધું.`);
+
+      if (/^(go\s+)?back$/.test(low) || has('પાછળ જા')) return done(await run({ intent: 'GLOBAL', value: 'back' }), 'પાછળ ગયો.');
+      if (/^(go\s+)?home$/.test(low) || has('હોમ પર જા')) return done(await run({ intent: 'GLOBAL', value: 'home' }), 'હોમ સ્ક્રીન પર આવ્યો.');
+      if (has('screenshot', 'સ્ક્રીનશોટ')) return done(await run({ intent: 'GLOBAL', value: 'screenshot' }), 'સ્ક્રીનશોટ લઈ લીધો.');
+      if (has('lock screen', 'ફોન લોક', 'lock the phone')) return done(await run({ intent: 'GLOBAL', value: 'lock' }), 'ફોન લોક કરી દીધો.');
+      if (has('scroll', 'સ્ક્રોલ')) return done(await run({ intent: 'SCROLL', value: has('up', 'ઉપર') ? 'up' : 'down' }), 'સ્ક્રોલ કરી દીધું.');
+
+      if (has('alarm', 'એલાર્મ', 'अलार्म')) return done(await run({ intent: 'ALARM', value: query }), 'એલાર્મ સેટ કરી દીધો.');
+
+      if (/^(call|dial|phone)\s+/i.test(query) || has('કોલ કર', 'call kar', 'फोन कर')) {
+        const who = query.replace(/^(call|dial|phone)\s+/i, '').replace(/કોલ કરો|કોલ કર|call karo|call kar|फोन करो|फोन कर/gi, '').trim();
+        const num = who.replace(/[^\d+]/g, '');
+        return done(await run({ intent: 'CALL', target: num.length >= 3 ? num : who }), `કોલ લગાવી રહ્યો છું: <b>${esc(who)}</b>`);
+      }
+
+      if ((low.startsWith('play ') && !has('play store')) || has('on youtube', 'યુટ્યુબ પર', 'વગાડ', 'गाना')) {
+        const q = query.replace(/^play\s+/i, '').replace(/on youtube|યુટ્યુબ પર|વગાડો|વગાડ|ગીતો|ગીત|\bsong\b/gi, ' ').replace(/(^|\s)(ના|નું|નો|ની)(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim() || query;
+        return done(await run({ intent: 'YOUTUBE_PLAY', value: q }), `<b>${esc(q)}</b> ચલાવી રહ્યો છું.`);
+      }
+
+      const dynamicApp = extractDynamicAppName(query);
+      if (dynamicApp) return done(await run({ intent: 'OPEN_APP', target: dynamicApp }), `<b>${esc(dynamicApp)}</b> ખોલી દીધું.`);
+
+      const aiRes = await runMJDeepAgent(query);
+      if (aiRes) return aiRes;
+
+      const fallback = `${esc(userName)}, AI સુધી પહોંચી શક્યો નથી. ઇન્ટરનેટ ચેક કરીને ફરી પ્રયાસ કરો.`;
+      return { html: fallback, speech: fallback, err: true };
+    }
+
+    /* =========================================================
+       6. NATIVE ANDROID VOICE MIC & TTS + WEB FALLBACK
+    ========================================================= */
+    function speakText(text) {
+      if (!text) return;
+      const clean = text.replace(/<[^>]*>/g, '').replace(/[*_#`~⚡✓]/g, '').trim();
+      const lang = MJSafeStore.get('mj_lang') || 'gu-IN';
+
+      // 1. Use Native Android Text-to-Speech if running inside APK
+      if (hasNativeBridge() && window.MJNativeBridge.speak) {
+        try {
+          window.MJNativeBridge.speak(clean, lang);
+          return;
+        } catch (e) {}
+      }
+
+      // 2. Fallback to Browser SpeechSynthesis
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(clean);
+        utter.lang = lang;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    // Callback invoked directly by Android MainActivity.java when Native Voice Recognition finishes!
+    window.onNativeVoiceResult = function(spokenText) {
+      stopVoiceSession();
+      if (spokenText && spokenText.trim()) {
+        switchView('orb');
+        document.getElementById('mainAskInput').value = spokenText.trim();
+        submitMainQuery();
+      }
+    };
+
+    function triggerNativeOrWebVoice() {
+      const lang = MJSafeStore.get('mj_lang') || 'gu-IN';
+
+      // 1. If running in Android APK, launch 100% reliable Native Android Google Voice Input!
+      if (hasNativeBridge() && window.MJNativeBridge.startVoice) {
+        try {
+          window.MJNativeBridge.startVoice(lang);
+          return;
+        } catch (e) {}
+      }
+
+      // 2. Otherwise use Web Speech API (for PC Browser)
+      switchView('voice');
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRec) {
+        alert('તમારા બ્રાઉઝરમાં માઈક સપોર્ટ નથી — નીચે ટાઈપ કરીને કમાન્ડ આપો.');
+        switchView('orb');
+        return;
+      }
+
+      if (activeRecognition) {
+        stopVoiceSession();
+        return;
+      }
+
+      const rec = new SpeechRec();
+      activeRecognition = rec;
+      rec.lang = lang;
+      rec.interimResults = false;
+
+      rec.onstart = () => {
+        voicePulseAmp = 18;
+        document.getElementById('redMicBtn').classList.add('active');
+        document.getElementById('voiceBars').classList.add('speaking');
+        document.getElementById('voiceStateLabel').innerText = 'Listening... Speak Now';
+      };
+
+      rec.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        stopVoiceSession();
+        switchView('orb');
+        document.getElementById('mainAskInput').value = transcript;
+        submitMainQuery();
+      };
+
+      rec.onerror = (ev) => {
+        const err = ev && ev.error;
+        stopVoiceSession(err === 'not-allowed' || err === 'service-not-allowed' ? 'માઈક પરમિશન આપો (Allow Microphone)'
+          : err === 'no-speech' ? 'કંઈ સંભળાયું નહીં — ફરી ટેપ કરો' : '');
+      };
+      rec.onend = () => { if (activeRecognition === rec) stopVoiceSession(); };
+
+      try { rec.start(); } catch (e) { stopVoiceSession(); }
+    }
+
+    function stopVoiceSession(msg) {
+      const r = activeRecognition;
+      activeRecognition = null;
+      if (r) { try { r.abort(); } catch (e) {} }
+      voicePulseAmp = 0;
+      document.getElementById('redMicBtn').classList.remove('active');
+      document.getElementById('voiceBars').classList.remove('speaking');
+      document.getElementById('voiceStateLabel').innerText = (typeof msg === 'string' && msg) ? msg : 'Tap Red Mic to Speak';
+    }
+
+    (function () {
+      const g = document.getElementById('sheetGrab'), sh = document.getElementById('resultSheet');
+      let y0 = null, dy = 0;
+      g.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; dy = 0; sh.style.transition = 'none'; }, { passive: true });
+      g.addEventListener('touchmove', e => { if (y0 === null) return; dy = Math.max(0, e.touches[0].clientY - y0); sh.style.transform = `translateY(${dy}px)`; }, { passive: true });
+      g.addEventListener('touchend', () => {
+        if (y0 === null) return;
+        y0 = null; sh.style.transition = ''; sh.style.transform = '';
+        if (dy > 90) closeSheetAndReset();
+      });
+    })();
+
+    function openSettings() {
+      document.getElementById('settingsModal').classList.add('open');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('open');
+    }
+
+    function saveSettings() {
+      const uName = document.getElementById('userNameInp').value.trim() || 'Boss';
+      MJSafeStore.set('mj_user_name', uName);
+      MJSafeStore.set('mj_gemini_key', document.getElementById('geminiKey').value.trim());
+      MJSafeStore.set('mj_groq_key', document.getElementById('groqKey').value.trim());
+      MJSafeStore.set('mj_openrouter_key', document.getElementById('openrouterKey').value.trim());
+      MJSafeStore.set('mj_lang', document.getElementById('voiceLang').value);
+
+      document.getElementById('greetingSub').innerText = `Hello ${uName}`;
+      document.getElementById('hubTitle').innerText = `Hi, ${uName}!`;
+      closeSettings();
+      speakText(`નમસ્તે ${uName}, તમારું સેટિંગ સેવ થઈ ગયું છે.`);
+    }
+  </script>
+</body>
+</html>
