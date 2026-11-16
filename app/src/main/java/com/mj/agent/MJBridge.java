@@ -32,16 +32,35 @@ public class MJBridge {
     private final Activity act;
     private final WebView web;
     private TextToSpeech tts;
-    private boolean ttsReady = false;
-    private String pendingSpeech = null, pendingLang = "gu-IN";
+    private volatile boolean ttsReady = false;
+    private volatile boolean ttsInitRequested = false;
+    private volatile String pendingSpeech = null;
+    private volatile String pendingLang = "gu-IN";
     private boolean torchOn = false;
 
     public MJBridge(Activity a, WebView w) {
-        act = a; web = w;
-        tts = new TextToSpeech(a.getApplicationContext(), st -> {
-            ttsReady = (st == TextToSpeech.SUCCESS);
-            if (ttsReady && pendingSpeech != null) { doSpeak(pendingSpeech, pendingLang); pendingSpeech = null; }
-        });
+        act = a;
+        web = w;
+        // Text-to-Speech is initialized only when the user requests speech.
+    }
+
+    private void initializeTts() {
+        if (tts != null || ttsInitRequested || act.isFinishing() || act.isDestroyed()) return;
+        ttsInitRequested = true;
+        try {
+            tts = new TextToSpeech(act.getApplicationContext(), status -> {
+                ttsReady = (status == TextToSpeech.SUCCESS);
+                if (ttsReady && pendingSpeech != null) {
+                    String text = pendingSpeech;
+                    String lang = pendingLang;
+                    pendingSpeech = null;
+                    doSpeak(text, lang);
+                }
+            });
+        } catch (RuntimeException error) {
+            ttsInitRequested = false;
+            android.util.Log.e("MJBridge", "Unable to initialize TextToSpeech", error);
+        }
     }
 
     public static void requestPermissions(Activity a) {
@@ -59,7 +78,17 @@ public class MJBridge {
         });
     }
 
-    public void shutdown() { if (tts != null) { tts.stop(); tts.shutdown(); } }
+    public void shutdown() {
+        if (tts != null) {
+            try {
+                tts.stop();
+                tts.shutdown();
+            } catch (RuntimeException error) {
+                android.util.Log.w("MJBridge", "TTS shutdown failed", error);
+            }
+            tts = null;
+        }
+    }
 
     private String start(Intent i) {
         try { i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); act.startActivity(i); return "OK"; }
@@ -241,8 +270,13 @@ public class MJBridge {
 
     @JavascriptInterface
     public String speak(String text, String lang) {
-        if (!ttsReady) { pendingSpeech = text; pendingLang = lang; return "OK"; }
-        doSpeak(text, lang);
+        pendingSpeech = text == null ? "" : text;
+        pendingLang = lang == null ? "gu-IN" : lang;
+        act.runOnUiThread(this::initializeTts);
+        if (!ttsReady) return "OK TTS starting";
+        String pending = pendingSpeech;
+        pendingSpeech = null;
+        doSpeak(pending, pendingLang);
         return "OK";
     }
 
